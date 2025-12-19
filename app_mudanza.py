@@ -6,122 +6,90 @@ import urllib.parse
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(page_title="Mudanza Prime", page_icon="🚚", layout="centered")
 
-# --- INTERRUPTOR DE MODO (TOGGLE) ---
-st.sidebar.header("⚙️ Configuración Visual")
-modo_oscuro = st.sidebar.toggle("🌙 Activar Modo Oscuro", value=False)
+# --- TOGGLE MODO OSCURO ---
+st.sidebar.header("⚙️ Configuración")
+modo_oscuro = st.sidebar.toggle("🌙 Modo Oscuro", value=False)
 
 # --- DEFINICIÓN DE COLORES ---
-COLOR_PRIMARIO_MARCA = "#2E004E"   # Morado
-COLOR_SECUNDARIO_MARCA = "#FFC300" # Amarillo
+COLOR_PRIMARIO = "#2E004E"   # Morado
+COLOR_SECUNDARIO = "#FFC300" # Amarillo
 
 if modo_oscuro:
-    # === PALETA NOCTURNA ===
+    # NOCTURNO
     FONDO_APP = "#0E1117"        
     COLOR_TEXTO = "#FFFFFF"      
     SIDEBAR_BG = "#1A1F2C"       
     SIDEBAR_TEXT = "#FFFFFF"     
-    COLOR_TITULO = "#A970FF"     # Morado neón
+    COLOR_TITULO = "#A970FF"     
     COLOR_INPUTS = "#262730"     
+    COLOR_CARD = "#1A1F2C"       # Color para tarjetas de info
 else:
-    # === PALETA DIURNA ===
+    # DIURNO
     FONDO_APP = "#FFFFFF"        
     COLOR_TEXTO = "#1F2937"      
     SIDEBAR_BG = "#F3F4F6"       
     SIDEBAR_TEXT = "#000000"     
     COLOR_TITULO = "#2E004E"     
     COLOR_INPUTS = "#FFFFFF"     
+    COLOR_CARD = "#F9FAFB"       # Gris muy claro para tarjetas
 
-# --- ESTILOS CSS (SOLUCIÓN DE LETRAS FANTASMAS) ---
+# --- ESTILOS CSS ---
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700;800&display=swap');
 
-    /* 1. FONDO GENERAL */
     .stApp {{ background-color: {FONDO_APP}; font-family: 'Montserrat', sans-serif; }}
     
-    /* 2. TEXTOS */
+    /* Textos */
     h1, h2, h3, h4, p, li, .stMarkdown, .stTable, .stMetricLabel {{ color: {COLOR_TEXTO} !important; }}
     
-    /* 3. BARRA LATERAL */
+    /* Sidebar */
     section[data-testid="stSidebar"] {{ background-color: {SIDEBAR_BG}; }}
-    section[data-testid="stSidebar"] h1, section[data-testid="stSidebar"] h2, section[data-testid="stSidebar"] label, section[data-testid="stSidebar"] span, section[data-testid="stSidebar"] div {{
-        color: {SIDEBAR_TEXT} !important;
-    }}
+    section[data-testid="stSidebar"] h1, section[data-testid="stSidebar"] div, section[data-testid="stSidebar"] label {{ color: {SIDEBAR_TEXT} !important; }}
     
-    /* 4. SOLUCIÓN LOGO (Estilo Insignia) */
-    div[data-testid="stImage"] img {{
-        background-color: white;
-        padding: 8px;
-        border-radius: 12px;
-    }}
+    /* Logo Estilo Insignia */
+    div[data-testid="stImage"] img {{ background-color: white; padding: 8px; border-radius: 12px; }}
 
-    /* 5. TÍTULO Y SLOGAN */
+    /* Títulos */
     .titulo-principal {{
-        font-family: 'Montserrat', sans-serif;
-        font-weight: 800;
-        font-size: 45px;
-        color: {COLOR_TITULO} !important;
-        text-transform: uppercase;
-        letter-spacing: -1px;
-        line-height: 1.0;
-        margin-bottom: 0;
+        font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 45px;
+        color: {COLOR_TITULO} !important; text-transform: uppercase; line-height: 1.0; margin-bottom: 0;
     }}
     .slogan {{
-        font-family: 'Montserrat', sans-serif;
-        font-size: 18px;
-        font-weight: 500;
-        color: {COLOR_TEXTO};
-        opacity: 0.8;
-        font-style: italic;
-        margin-top: -10px;
+        font-family: 'Montserrat', sans-serif; font-size: 18px; font-weight: 500;
+        color: {COLOR_TEXTO}; opacity: 0.8; font-style: italic; margin-top: -10px;
     }}
 
-    /* 6. CORRECCIÓN SUPREMA DE DROPDOWNS (Menús Desplegables) */
-    /* Esto fuerza a que la lista desplegable SIEMPRE sea blanca con letras negras */
-    ul[data-testid="stSelectboxVirtualDropdown"] {{
-        background-color: white !important;
-    }}
-    ul[data-testid="stSelectboxVirtualDropdown"] li {{
-        color: black !important;
-        background-color: white !important;
-    }}
-    /* Color al pasar el mouse por encima de una opción */
-    ul[data-testid="stSelectboxVirtualDropdown"] li:hover {{
-        background-color: #FFC300 !important; /* Amarillo marca */
-        color: black !important;
-    }}
+    /* Dropdowns (Corrección Fantasmas) */
+    ul[data-testid="stSelectboxVirtualDropdown"] {{ background-color: white !important; }}
+    ul[data-testid="stSelectboxVirtualDropdown"] li {{ color: black !important; background-color: white !important; }}
+    ul[data-testid="stSelectboxVirtualDropdown"] li:hover {{ background-color: #FFC300 !important; color: black !important; }}
+    div[data-baseweb="select"] > div {{ background-color: {COLOR_INPUTS} !important; color: {COLOR_TEXTO} !important; }}
     
-    /* El texto de la caja cerrada */
-    div[data-baseweb="select"] > div {{
-        background-color: {COLOR_INPUTS} !important;
-        color: {COLOR_TEXTO} !important;
-    }}
-    
-    /* 7. INPUTS GENERALES */
-    .stNumberInput input, .stTextArea textarea {{
-        color: {COLOR_TEXTO} !important;
-        background-color: {COLOR_INPUTS};
-    }}
+    /* Inputs */
+    .stNumberInput input, .stTextArea textarea {{ color: {COLOR_TEXTO} !important; background-color: {COLOR_INPUTS}; }}
 
-    /* 8. BOTÓN AMARILLO */
+    /* Botón */
     .stButton>button {{
-        background-color: {COLOR_SECUNDARIO_MARCA} !important;
-        color: {COLOR_PRIMARIO_MARCA} !important;
+        background-color: {COLOR_SECUNDARIO} !important; color: {COLOR_PRIMARIO} !important;
         border-radius: 12px; border: none; font-weight: 800; font-size: 18px; width: 100%; padding: 15px 0;
         box-shadow: 0 4px 14px 0 rgba(255, 195, 0, 0.4);
     }}
     
-    /* 9. CAJAS DE HORARIOS */
+    /* Cajas Horarios */
     .horario-box {{ padding: 10px; border-radius: 8px; text-align: center; margin-bottom: 8px; font-weight: bold; font-size: 14px; }}
     .disponible {{ background-color: #D1FAE5; color: #065F46; border: 1px solid #34D399; }}
     .ocupado {{ background-color: #FEE2E2; color: #991B1B; border: 1px solid #F87171; }}
     
-    /* 10. MÉTRICAS */
-    div[data-testid="stMetricValue"] {{ color: {COLOR_TITULO} !important; }}
+    /* Tarjetas de Beneficios (Marketing) */
+    .beneficio-card {{
+        background-color: {COLOR_CARD}; padding: 15px; border-radius: 10px;
+        border-left: 5px solid {COLOR_SECUNDARIO}; margin-bottom: 10px;
+    }}
     </style>
     """, unsafe_allow_html=True)
 
-# --- CABECERA ---
+# --- HEADER ---
 col_logo, col_titulo = st.columns([1, 3])
 with col_logo:
     try: st.image("logo.jpg", width=130)
@@ -132,108 +100,124 @@ with col_titulo:
 
 st.divider()
 
-# --- SIDEBAR ---
-st.sidebar.header("🛠️ Cotización")
+# --- SIDEBAR (CONFIGURACIÓN) ---
+st.sidebar.header("🛠️ Configura tu Servicio")
 
-# SELECCIÓN DE VEHÍCULO
 opciones_vehiculo = {
     "Furgoneta (Pequeña)": {"precio": 30, "cap": 6},
     "Camión 2 Toneladas": {"precio": 40, "cap": 12},
     "Camión 3.5 Toneladas": {"precio": 50, "cap": 20},
     "Camión 6 Toneladas": {"precio": 60, "cap": 35}
 }
-seleccion = st.sidebar.selectbox("Selecciona Vehículo:", list(opciones_vehiculo.keys()))
+seleccion = st.sidebar.selectbox("Vehículo:", list(opciones_vehiculo.keys()))
 datos_camion = opciones_vehiculo[seleccion]
 
 st.sidebar.markdown("---")
 distancia = st.sidebar.number_input("Distancia (km):", 1, 500, 10)
 personal = st.sidebar.slider("Ayudantes:", 0, 6, 2)
 
-st.sidebar.markdown("---")
 st.sidebar.subheader("📦 Materiales")
 cajas = st.sidebar.number_input("Cartones ($1.50):", 0, 100, 10)
 rollos = st.sidebar.number_input("Rollos ($20):", 0, 20, 1)
 
-# --- SERVICIOS PREMIUM ---
-st.sidebar.markdown("---")
-st.sidebar.subheader("💎 Servicios Extra")
+st.sidebar.subheader("💎 Extras")
+proteccion = st.sidebar.checkbox("Protección Delicados (+$50)")
+costo_proteccion = 50 if proteccion else 0
+empaque = st.sidebar.radio("Empaque:", ["Cliente ($0)", "Básico (+$30)", "Completo (+$50)"])
+costo_empaque = 30 if "Básico" in empaque else (50 if "Completo" in empaque else 0)
 
-proteccion_delicada = st.sidebar.checkbox("Protección Delicados (+$50)")
-costo_delicados = 50 if proteccion_delicada else 0
+# --- NUEVO: INVENTARIO INTERACTIVO ---
+st.markdown("### 📝 ¿Qué vamos a llevar?")
+st.caption("Selecciona los objetos grandes para calcular mejor el espacio.")
 
-servicio_empaque = st.sidebar.radio(
-    "Servicio de Empaque:",
-    ["Cliente empaca ($0)", "Básico (+$30)", "Completo (+$50)"]
-)
-if "Básico" in servicio_empaque: costo_empaque = 30
-elif "Completo" in servicio_empaque: costo_empaque = 50
-else: costo_empaque = 0
+col_sala, col_cuarto, col_cocina = st.columns(3)
+with col_sala:
+    st.markdown("**🛋️ Sala / Comedor**")
+    sofas = st.number_input("Sofás:", 0, 5, 0)
+    mesas = st.number_input("Mesas:", 0, 3, 0)
+    sillas = st.number_input("Sillas:", 0, 12, 0)
+with col_cuarto:
+    st.markdown("**🛏️ Dormitorio**")
+    camas = st.number_input("Camas:", 0, 5, 0)
+    armarios = st.number_input("Armarios:", 0, 5, 0)
+    tv = st.number_input("TVs:", 0, 5, 0)
+with col_cocina:
+    st.markdown("**🍳 Electrodomésticos**")
+    refris = st.number_input("Refris:", 0, 2, 0)
+    cocinas = st.number_input("Cocinas:", 0, 2, 0)
+    lavadoras = st.number_input("Lavadoras:", 0, 2, 0)
 
-# --- AGENDA ---
-st.subheader("📅 Agenda tu Fecha y Hora")
-col_fecha, col_hora = st.columns(2)
-with col_fecha:
-    fecha_seleccionada = st.date_input("Selecciona el día:", min_value=datetime.date.today())
-
-random.seed(f"{fecha_seleccionada}_{seleccion}") 
-ocupacion_simulada = random.choice([[False,False,False], [True,False,False], [False,True,False]])
-horarios = [
-    {"hora": "08:00 AM - 12:00 PM", "ocupado": ocupacion_simulada[0]},
-    {"hora": "11:00 AM - 03:00 PM", "ocupado": ocupacion_simulada[1]},
-    {"hora": "02:00 PM - 06:00 PM", "ocupado": ocupacion_simulada[2]},
-]
-
-with col_hora:
-    st.write(f"Disponibilidad: **{seleccion}**")
-    opciones_disponibles = []
-    for turno in horarios:
-        if turno["ocupado"]:
-            st.markdown(f'<div class="horario-box ocupado">🔴 {turno["hora"]} (Ocupado)</div>', unsafe_allow_html=True)
-        else:
-            st.markdown(f'<div class="horario-box disponible">🟢 {turno["hora"]} (Libre)</div>', unsafe_allow_html=True)
-            opciones_disponibles.append(turno["hora"])
-
-    if opciones_disponibles:
-        hora_final = st.selectbox("Elige tu horario:", opciones_disponibles)
-    else:
-        hora_final = "Sin disponibilidad"
-        st.warning("Día completo.")
+# Crear resumen de texto para WhatsApp
+lista_objetos = []
+if sofas > 0: lista_objetos.append(f"{sofas} Sofás")
+if mesas > 0: lista_objetos.append(f"{mesas} Mesas")
+if camas > 0: lista_objetos.append(f"{camas} Camas")
+if refris > 0: lista_objetos.append(f"{refris} Refris")
+if lavadoras > 0: lista_objetos.append(f"{lavadoras} Lavadoras")
+resumen_inventario = ", ".join(lista_objetos) if lista_objetos else "Varios (No especificado)"
 
 st.divider()
 
-# --- CÁLCULOS ---
-costo_base = datos_camion["precio"]
-costo_personal = personal * 15
-costo_materiales = (cajas * 1.50) + (rollos * 20) + costo_delicados
-costo_distancia = distancia * 1.0
-gran_total = costo_base + costo_personal + costo_materiales + costo_distancia + costo_empaque
+# --- AGENDA ---
+st.subheader("📅 Disponibilidad")
+col_cal, col_hor = st.columns(2)
+with col_cal:
+    fecha = st.date_input("Fecha:", min_value=datetime.date.today())
+with col_hor:
+    random.seed(f"{fecha}_{seleccion}") 
+    ocup = random.choice([[False,False,False], [True,False,False], [False,True,False]])
+    horarios = [
+        {"h": "08:00 - 12:00", "oc": ocup[0]},
+        {"h": "11:00 - 15:00", "oc": ocup[1]},
+        {"h": "14:00 - 18:00", "oc": ocup[2]},
+    ]
+    opts = [h["h"] for h in horarios if not h["oc"]]
+    
+    # Mostrar estado visual
+    for h in horarios:
+        st.markdown(f'<div class="horario-box {"ocupado" if h["oc"] else "disponible"}">{"🔴" if h["oc"] else "🟢"} {h["h"]}</div>', unsafe_allow_html=True)
+    
+    hora_final = st.selectbox("Elige hora:", opts) if opts else "Lleno"
 
-# --- RESUMEN ---
-col1, col2 = st.columns(2)
-with col1:
-    st.subheader("Tu Reserva")
-    st.info(f"""
-    **📅 Fecha:** {fecha_seleccionada}  
-    **⏰ Hora:** {hora_final}  
-    **🚛 Vehículo:** {seleccion}
-    """)
-    st.write(f"**Extras:** {servicio_empaque} | Protec: {'Sí' if proteccion_delicada else 'No'}")
-
-with col2:
-    st.subheader("Presupuesto")
+# --- MARKETING & CONFIANZA (SECCIÓN NUEVA) ---
+st.divider()
+st.subheader("🌟 ¿Por qué Mudanza Prime?")
+col_m1, col_m2 = st.columns(2)
+with col_m1:
     st.markdown(f"""
-    | Concepto | Valor |
-    | :--- | :---: |
-    | Vehículo | ${costo_base} |
-    | Personal | ${costo_personal} |
-    | Materiales/Extras | ${costo_materiales + costo_empaque} |
-    | Distancia | ${costo_distancia} |
-    """)
-    st.metric(label="TOTAL ESTIMADO", value=f"${gran_total:.2f}")
+    <div class="beneficio-card">
+    <b>🛡️ Garantía de Cuidado</b><br>
+    Tratamos tus muebles como si fueran nuestros.
+    </div>
+    """, unsafe_allow_html=True)
+    st.markdown(f"""
+    <div class="beneficio-card">
+    <b>⚡ Puntualidad Prime</b><br>
+    Llegamos a la hora pactada, sin excusas.
+    </div>
+    """, unsafe_allow_html=True)
+with col_m2:
+    st.info("💡 **Tip de Experto:** Descongela tu refrigeradora 24 horas antes para evitar fugas de agua durante el viaje.")
 
-# --- BOTÓN WHATSAPP ---
-mensaje = f"Hola Mudanza Prime! 🚛\nReserva: {fecha_seleccionada} a las {hora_final}\nVehículo: {seleccion}\nTotal: ${gran_total:.2f}\n(Incluye {servicio_empaque})"
-link_whatsapp = f"https://wa.me/593999999999?text={urllib.parse.quote(mensaje)}"
+# --- CÁLCULOS ---
+total = datos_camion["precio"] + (personal*15) + (distancia*1) + (cajas*1.5) + (rollos*20) + costo_proteccion + costo_empaque
 
-if hora_final != "Sin disponibilidad":
-    st.markdown(f"""<a href="{link_whatsapp}" target="_blank" style="text-decoration: none;"><button>CONFIRMAR RESERVA 📲</button></a>""", unsafe_allow_html=True)
+# --- RESUMEN FINAL ---
+st.divider()
+col_res1, col_res2 = st.columns(2)
+with col_res1:
+    st.subheader("Resumen")
+    st.write(f"**🗓️** {fecha} | {hora_final}")
+    st.write(f"**🚛** {seleccion}")
+    if lista_objetos:
+        st.caption(f"**📦 Items clave:** {resumen_inventario}")
+
+with col_res2:
+    st.metric("TOTAL ESTIMADO", f"${total:.2f}")
+
+# --- WHATSAPP ---
+msg = f"Hola Mudanza Prime! 🚛\nReserva: {fecha} - {hora_final}\nCamión: {seleccion}\nItems: {resumen_inventario}\nTotal: ${total:.2f}"
+link = f"https://wa.me/593999999999?text={urllib.parse.quote(msg)}"
+
+if hora_final != "Lleno":
+    st.markdown(f"""<a href="{link}" target="_blank"><button>SOLICITAR MUDANZA 📲</button></a>""", unsafe_allow_html=True)
