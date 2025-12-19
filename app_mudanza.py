@@ -30,7 +30,8 @@ st.markdown(f"""
     section[data-testid="stSidebar"] h2, 
     section[data-testid="stSidebar"] h3, 
     section[data-testid="stSidebar"] label, 
-    section[data-testid="stSidebar"] .stMarkdown {{
+    section[data-testid="stSidebar"] .stMarkdown,
+    section[data-testid="stSidebar"] p {{
         color: #FFFFFF !important;
     }}
     
@@ -93,11 +94,11 @@ st.markdown(f"""
 col_logo, col_titulo = st.columns([1, 3])
 
 with col_logo:
-    # Intentamos mostrar el logo, si no está subido, muestra un emoji
+    # Intentamos mostrar el logo
     try:
-        st.image("logo.jpg", width=110)
+        st.image("logo.jpg", width=130)
     except:
-        st.write("🚚") # Placeholder si no encuentra la imagen
+        st.write("🚚") 
 
 with col_titulo:
     st.markdown('<p class="titulo-principal">MUDANZA PRIME</p>', unsafe_allow_html=True)
