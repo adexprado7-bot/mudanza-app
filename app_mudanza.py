@@ -1,52 +1,77 @@
 import streamlit as st
 import datetime
 import random
+import urllib.parse
 
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(page_title="Mudanza Prime", page_icon="🚚", layout="centered")
 
-# --- COLORES DE TU MARCA ---
-COLOR_PRIMARIO = "#2E004E"   # Morado del logo (para textos y detalles)
-COLOR_SECUNDARIO = "#FFC300" # Amarillo del logo (para botones)
-COLOR_TEXTO = "#1F2937"      # Gris oscuro para lectura
-COLOR_SIDEBAR = "#1A1F2C"    # NUEVO: Carbón oscuro para una barra lateral elegante
+# --- INTERRUPTOR DE MODO (TOGGLE) ---
+# Esto debe ir al principio para definir los colores antes de pintar nada
+st.sidebar.header("⚙️ Configuración Visual")
+modo_oscuro = st.sidebar.toggle("🌙 Modo Oscuro", value=False)
 
-# --- ESTILOS CSS ---
+# --- DEFINICIÓN DE PALETAS DE COLORES ---
+COLOR_PRIMARIO_MARCA = "#2E004E"   # Morado (Logo)
+COLOR_SECUNDARIO_MARCA = "#FFC300" # Amarillo (Botones)
+COLOR_SIDEBAR = "#1A1F2C"          # Carbón oscuro (Siempre igual para identidad)
+
+if modo_oscuro:
+    # PALETA NOCTURNA
+    FONDO_APP = "#0E1117"        # Negro suave
+    COLOR_TEXTO = "#FAFAFA"      # Blanco casi puro
+    COLOR_CAJAS = "#262730"      # Gris oscuro para inputs/cajas
+    COLOR_TITULO = "#A970FF"     # Un morado más claro y brillante para que resalte en negro
+else:
+    # PALETA DIURNA (Original)
+    FONDO_APP = "#FFFFFF"        # Blanco
+    COLOR_TEXTO = "#1F2937"      # Gris oscuro
+    COLOR_CAJAS = "#F0F2F6"      # Gris muy clarito
+    COLOR_TITULO = "#2E004E"     # Morado original oscuro
+
+# --- ESTILOS CSS DINÁMICOS ---
 st.markdown(f"""
     <style>
-    /* Importar fuente moderna */
+    /* Importar fuente */
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;800&display=swap');
 
-    /* Estilo general */
-    .stApp {{ background-color: #FFFFFF; font-family: 'Montserrat', sans-serif; }}
+    /* 1. FONDO DE LA APP (Dinámico) */
+    .stApp {{
+        background-color: {FONDO_APP};
+        font-family: 'Montserrat', sans-serif;
+    }}
     
-    /* BARRA LATERAL - NUEVO COLOR */
+    /* 2. TEXTOS GENERALES (Dinámico) */
+    h1, h2, h3, h4, p, li, .stMarkdown {{
+        color: {COLOR_TEXTO} !important;
+    }}
+    
+    /* 3. BARRA LATERAL (Fija en Carbón para identidad de marca) */
     section[data-testid="stSidebar"] {{ background-color: {COLOR_SIDEBAR}; }}
     
-    /* Textos de la barra lateral en BLANCO */
+    /* Textos del sidebar siempre blancos */
     section[data-testid="stSidebar"] h1, 
     section[data-testid="stSidebar"] p, 
-    section[data-testid="stSidebar"] label {{
+    section[data-testid="stSidebar"] label,
+    section[data-testid="stSidebar"] span {{
         color: #FFFFFF !important;
     }}
-    /* Inputs de la barra lateral */
-    .stNumberInput input, .stSelectbox div[data-baseweb="select"] {{ color: {COLOR_TEXTO}; }}
-
-    /* TÍTULO PRINCIPAL - MÁS GRANDE */
+    
+    /* 4. TÍTULO PRINCIPAL (Dinámico) */
     .titulo-principal {{
         font-family: 'Montserrat', sans-serif;
         font-weight: 800;
-        font-size: 48px; /* Aumentado de 38px a 48px */
-        color: {COLOR_PRIMARIO};
+        font-size: 48px;
+        color: {COLOR_TITULO} !important;
         text-transform: uppercase;
         letter-spacing: -1px;
         line-height: 1.2;
     }}
 
-    /* BOTÓN PRINCIPAL */
+    /* 5. BOTÓN PRINCIPAL (Amarillo Brand) */
     .stButton>button {{
-        background-color: {COLOR_SECUNDARIO} !important;
-        color: {COLOR_PRIMARIO} !important;
+        background-color: {COLOR_SECUNDARIO_MARCA} !important;
+        color: {COLOR_PRIMARIO_MARCA} !important;
         border-radius: 12px;
         border: none;
         font-weight: 800;
@@ -59,23 +84,30 @@ st.markdown(f"""
     }}
     .stButton>button:hover {{ transform: scale(1.02); }}
     
-    /* Cajas de Horarios */
+    /* 6. CAJAS DE HORARIOS */
     .horario-box {{ padding: 10px; border-radius: 8px; text-align: center; margin-bottom: 8px; font-weight: bold; }}
     .disponible {{ background-color: #D1FAE5; color: #065F46; border: 1px solid #34D399; }}
     .ocupado {{ background-color: #FEE2E2; color: #991B1B; border: 1px solid #F87171; }}
     
-    /* Métricas de precio */
-    div[data-testid="stMetricValue"] {{ color: {COLOR_PRIMARIO} !important; }}
+    /* 7. MÉTRICAS (PRECIOS) */
+    div[data-testid="stMetricValue"] {{ 
+        color: {COLOR_TITULO} !important; /* El precio cambia de color según el fondo */
+    }}
+    div[data-testid="stMetricLabel"] {{ 
+        color: {COLOR_TEXTO} !important; 
+    }}
+    
+    /* 8. TABLAS (Bordes) */
+    .stTable {{ color: {COLOR_TEXTO}; }}
     </style>
     """, unsafe_allow_html=True)
 
 # --- CABECERA ---
 col_logo, col_titulo = st.columns([1, 3])
 with col_logo:
-    try: st.image("logo.jpg", width=140) # Logo un poco más grande para balancear
+    try: st.image("logo.jpg", width=140)
     except: st.write("🚚") 
 with col_titulo:
-    # Título más grande y sin subtítulo "2.0"
     st.markdown('<p class="titulo-principal">MUDANZA PRIME</p>', unsafe_allow_html=True)
 
 st.divider()
@@ -99,7 +131,7 @@ st.sidebar.markdown("---")
 cajas = st.sidebar.number_input("Cartones ($1.50):", 0, 100, 10)
 rollos = st.sidebar.number_input("Rollos ($20):", 0, 20, 1)
 
-# --- LÓGICA DE AGENDA (SIMULADA) ---
+# --- LÓGICA DE AGENDA ---
 st.subheader("📅 Agenda tu Fecha y Hora")
 col_fecha, col_hora = st.columns(2)
 with col_fecha:
@@ -118,7 +150,6 @@ with col_hora:
     st.write(f"Disponibilidad para: **{seleccion}**")
     opciones_disponibles = []
     
-    # Visualización mejorada de horarios con cajitas de colores
     for turno in horarios:
         if turno["ocupado"]:
             st.markdown(f'<div class="horario-box ocupado">🔴 {turno["hora"]} (Ocupado)</div>', unsafe_allow_html=True)
@@ -130,18 +161,17 @@ with col_hora:
         hora_final = st.selectbox("Elige tu horario:", opciones_disponibles)
     else:
         hora_final = "Sin disponibilidad"
-        st.warning("Día completo para este camión.")
+        st.warning("Día completo.")
 
 st.divider()
 
-# --- CÁLCULOS ---
+# --- CÁLCULOS Y RESUMEN ---
 costo_base = datos_camion["precio"]
 costo_personal = personal * 15
 costo_materiales = (cajas * 1.50) + (rollos * 20)
 costo_distancia = distancia * 1.0
 gran_total = costo_base + costo_personal + costo_materiales + costo_distancia
 
-# --- RESUMEN FINAL ---
 col1, col2 = st.columns(2)
 with col1:
     st.subheader("Tu Reserva")
@@ -164,12 +194,8 @@ with col2:
     st.metric(label="TOTAL ESTIMADO", value=f"${gran_total:.2f}")
 
 # --- BOTÓN WHATSAPP ---
-mi_numero = "593999999999"  # <--- TU NÚMERO AQUÍ
 mensaje = f"Hola Mudanza Prime! Quiero reservar:\n📅 {fecha_seleccionada}\n⏰ {hora_final}\n🚛 {seleccion}\n💰 Total: ${gran_total:.2f}"
-import urllib.parse
-link_whatsapp = f"https://wa.me/{mi_numero}?text={urllib.parse.quote(mensaje)}"
+link_whatsapp = f"https://wa.me/593999999999?text={urllib.parse.quote(mensaje)}"
 
 if hora_final != "Sin disponibilidad":
     st.markdown(f"""<a href="{link_whatsapp}" target="_blank" style="text-decoration: none;"><button>CONFIRMAR RESERVA 📲</button></a>""", unsafe_allow_html=True)
-else:
-    st.error("Selecciona otra fecha o camión.")
