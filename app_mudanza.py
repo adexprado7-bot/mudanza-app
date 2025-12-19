@@ -152,4 +152,81 @@ with col_cuarto:
 with col_cocina:
     st.markdown("**🍳 Cocina**")
     refris = st.number_input("Refris:", 0, 2, 0)
-    cocinas = st.number_input("Coc
+    cocinas = st.number_input("Cocinas:", 0, 2, 0)
+    lavadoras = st.number_input("Lavadoras:", 0, 2, 0)
+
+lista_objetos = []
+if sofas > 0: lista_objetos.append(f"{sofas} Sofás")
+if mesas > 0: lista_objetos.append(f"{mesas} Mesas")
+if camas > 0: lista_objetos.append(f"{camas} Camas")
+if refris > 0: lista_objetos.append(f"{refris} Refris")
+if lavadoras > 0: lista_objetos.append(f"{lavadoras} Lavadoras")
+resumen_inventario = ", ".join(lista_objetos) if lista_objetos else "Varios (No especificado)"
+
+st.divider()
+
+# --- AGENDA ---
+st.subheader("📅 Disponibilidad")
+col_cal, col_hor = st.columns(2)
+with col_cal:
+    fecha = st.date_input("Fecha:", min_value=datetime.date.today())
+with col_hor:
+    random.seed(f"{fecha}_{seleccion}") 
+    ocup = random.choice([[False,False,False], [True,False,False], [False,True,False]])
+    horarios = [
+        {"h": "08:00 - 12:00", "oc": ocup[0]},
+        {"h": "11:00 - 15:00", "oc": ocup[1]},
+        {"h": "14:00 - 18:00", "oc": ocup[2]},
+    ]
+    opts = [h["h"] for h in horarios if not h["oc"]]
+    
+    for h in horarios:
+        st.markdown(f'<div class="horario-box {"ocupado" if h["oc"] else "disponible"}">{"🔴" if h["oc"] else "🟢"} {h["h"]}</div>', unsafe_allow_html=True)
+    
+    hora_final = st.selectbox("Elige hora:", opts) if opts else "Lleno"
+
+# --- MARKETING ---
+st.divider()
+st.subheader("🌟 ¿Por qué Mudanza Prime?")
+col_m1, col_m2 = st.columns(2)
+with col_m1:
+    st.markdown(f"""
+    <div class="beneficio-card">
+    <b>🛡️ Garantía de Cuidado</b><br>
+    Tus muebles son tratados con máxima delicadeza.
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown(f"""
+    <div class="beneficio-card">
+    <b>👷 Personal Experto</b><br>
+    Equipo capacitado para maniobras difíciles.
+    </div>
+    """, unsafe_allow_html=True)
+
+with col_m2:
+    st.info("💡 **Tip de Experto:** Descongela tu refrigeradora 24 horas antes y sécala bien para evitar fugas de agua durante el viaje.")
+
+# --- CÁLCULOS ---
+total = datos_camion["precio"] + (personal*15) + (distancia*1) + (cajas*1.5) + (rollos*20) + costo_proteccion + costo_empaque
+
+# --- RESUMEN FINAL ---
+st.divider()
+col_res1, col_res2 = st.columns(2)
+with col_res1:
+    st.subheader("Resumen")
+    st.write(f"**🗓️** {fecha} | {hora_final}")
+    st.write(f"**🚛** {seleccion}")
+    if lista_objetos:
+        st.caption(f"**📦 Items:** {resumen_inventario}")
+
+with col_res2:
+    st.subheader("Presupuesto") 
+    st.metric("TOTAL ESTIMADO", f"${total:.2f}")
+
+# --- WHATSAPP ---
+msg = f"Hola Mudanza Prime! 🚛\nReserva: {fecha} - {hora_final}\nCamión: {seleccion}\nItems: {resumen_inventario}\nPersonal: {personal}\nTotal: ${total:.2f}"
+link = f"https://wa.me/593999999999?text={urllib.parse.quote(msg)}"
+
+if hora_final != "Lleno":
+    st.markdown(f"""<a href="{link}" target="_blank"><button>SOLICITAR MUDANZA 📲</button></a>""", unsafe_allow_html=True)
