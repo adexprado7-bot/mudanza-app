@@ -1,95 +1,148 @@
 import streamlit as st
 
 # --- CONFIGURACIÓN DE LA PÁGINA ---
-st.set_page_config(page_title="Cotizador Mudanza Prime", page_icon="🚚", layout="centered")
+st.set_page_config(page_title="Mudanza Prime", page_icon="🚚", layout="centered")
 
-# --- ESTILOS CSS (DISEÑO PREMIUM & CORRECCIÓN DE COLORES) ---
-st.markdown("""
+# --- COLORES DE TU MARCA (Extraídos del Logo) ---
+COLOR_PRIMARIO = "#2E004E"  # Morado oscuro del escudo
+COLOR_SECUNDARIO = "#FFC300" # Amarillo intenso del arco
+COLOR_TEXTO = "#1F2937"      # Gris oscuro para lectura
+
+# --- ESTILOS CSS (DISEÑO VISUAL ACTUALIZADO) ---
+st.markdown(f"""
     <style>
-    /* 1. Fondo principal BLANCO */
-    .stApp {
+    /* IMPORTAR FUENTE MODERNA (Google Fonts) */
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;800&display=swap');
+
+    /* 1. FONDO GENERAL */
+    .stApp {{
         background-color: #FFFFFF;
-        color: #000000; /* Forzar texto negro general */
-    }
+        font-family: 'Montserrat', sans-serif;
+    }}
     
-    /* 2. Sidebar (Menú lateral) GRIS SUAVE */
-    section[data-testid="stSidebar"] {
-        background-color: #F8F9FA;
-        border-right: 1px solid #E5E7EB;
-    }
+    /* 2. BARRA LATERAL (SIDEBAR) - AHORA ES MORADA */
+    section[data-testid="stSidebar"] {{
+        background-color: {COLOR_PRIMARIO};
+    }}
     
-    /* 3. Forzar colores de TEXTOS para que se vean siempre */
-    h1, h2, h3, h4, h5, h6, .css-10trblm {
-        color: #111827 !important; /* Negro casi puro */
-    }
+    /* Textos de la barra lateral en BLANCO para contraste */
+    section[data-testid="stSidebar"] h1, 
+    section[data-testid="stSidebar"] h2, 
+    section[data-testid="stSidebar"] h3, 
+    section[data-testid="stSidebar"] label, 
+    section[data-testid="stSidebar"] .stMarkdown {{
+        color: #FFFFFF !important;
+    }}
     
-    p, label, span, div.stMarkdown {
-        color: #374151 !important; /* Gris oscuro muy legible */
-    }
+    /* Inputs de la barra lateral */
+    .stNumberInput input, .stSelectbox div[data-baseweb="select"] {{
+        color: {COLOR_TEXTO};
+    }}
+
+    /* 3. TÍTULO MODERNO (TIPOGRAFÍA ACTUAL) */
+    .titulo-principal {{
+        font-family: 'Montserrat', sans-serif;
+        font-weight: 800; /* Extra negrita */
+        font-size: 40px;
+        color: {COLOR_PRIMARIO};
+        text-transform: uppercase;
+        letter-spacing: -1px;
+        margin-bottom: 0px;
+    }}
+    .subtitulo {{
+        font-family: 'Montserrat', sans-serif;
+        color: #666;
+        font-size: 18px;
+        margin-top: -10px;
+    }}
+
+    /* 4. CORRECCIÓN DE VISIBILIDAD DE TEXTOS (LADO DERECHO) */
+    h1, h2, h3, p, span, div {{
+        color: {COLOR_TEXTO};
+    }}
     
-    /* Texto dentro de los inputs del sidebar */
-    .stSelectbox label, .stNumberInput label, .stSlider label, .stRadio label, .stCheckbox label {
-        color: #111827 !important;
-    }
-    
-    /* 4. Estilo de las métricas (Cajitas de precio) */
-    div[data-testid="stMetricValue"] {
-        color: #2E86C1 !important; /* Azul corporativo */
-    }
-    
-    /* 5. Botón personalizado */
-    .stButton>button {
-        background-color: #2E86C1;
-        color: white !important;
-        border-radius: 8px;
+    /* Métricas (Precios) grandes en Morado */
+    div[data-testid="stMetricValue"] {{
+        color: {COLOR_PRIMARIO} !important;
+        font-weight: bold;
+    }}
+    div[data-testid="stMetricLabel"] {{
+        color: {COLOR_TEXTO} !important;
+    }}
+
+    /* 5. BOTÓN AMARILLO (ESTILO "PRIME") */
+    .stButton>button {{
+        background-color: {COLOR_SECUNDARIO} !important;
+        color: {COLOR_PRIMARIO} !important; /* Texto morado sobre amarillo */
+        border-radius: 12px;
         border: none;
-    }
+        font-weight: 800;
+        font-size: 18px;
+        text-transform: uppercase;
+        box-shadow: 0 4px 14px 0 rgba(255, 195, 0, 0.39);
+        transition: transform 0.2s;
+    }}
+    .stButton>button:hover {{
+        transform: scale(1.02);
+        background-color: #FFD60A !important;
+    }}
     </style>
     """, unsafe_allow_html=True)
 
-# --- TÍTULO ---
-st.title("🚚 Mudanza Prime")
-st.write("Cotizador oficial | Rápido, Seguro y Transparente")
+# --- CABECERA CON LOGO ---
+col_logo, col_titulo = st.columns([1, 3])
+
+with col_logo:
+    # Intentamos mostrar el logo, si no está subido, muestra un emoji
+    try:
+        st.image("logo.jpg", width=110)
+    except:
+        st.write("🚚") # Placeholder si no encuentra la imagen
+
+with col_titulo:
+    st.markdown('<p class="titulo-principal">MUDANZA PRIME</p>', unsafe_allow_html=True)
+    st.write("Cotizador Inteligente 2.0")
+
 st.divider()
 
 # --- BARRA LATERAL (INPUTS) ---
-st.sidebar.header("1. Configura tu Mudanza")
+st.sidebar.header("🛠️ Configuración")
 
 # Selección de Vehículo
 opciones_vehiculo = {
-    "Furgoneta (Carga Ligera)": {"precio": 30, "cap": 6, "icon": "🚐"},
+    "Furgoneta (Pequeña)": {"precio": 30, "cap": 6, "icon": "🚐"},
     "Camión 2 Toneladas": {"precio": 40, "cap": 12, "icon": "🚛"},
-    "Camión 3.5 Toneladas": {"precio": 50, "cap": 20, "icon": "🚛🚛"},
-    "Camión 6 Toneladas": {"precio": 60, "cap": 35, "icon": "🚛🚛🚛"}
+    "Camión 3.5 Toneladas": {"precio": 50, "cap": 20, "icon": "🚚"},
+    "Camión 6 Toneladas": {"precio": 60, "cap": 35, "icon": "🚛🚛"}
 }
 
-seleccion = st.sidebar.selectbox("Tamaño del Vehículo:", list(opciones_vehiculo.keys()))
+seleccion = st.sidebar.selectbox("Selecciona Vehículo:", list(opciones_vehiculo.keys()))
 datos_camion = opciones_vehiculo[seleccion]
 
 st.sidebar.markdown("---")
 
 # Inputs Básicos
-st.sidebar.subheader("📍 Distancia y Equipo")
-distancia = st.sidebar.number_input("Distancia aprox (km):", min_value=1, value=10)
+st.sidebar.subheader("📍 Ruta y Equipo")
+distancia = st.sidebar.number_input("Distancia (km):", min_value=1, value=10)
 costo_km = 1.0 
-personal = st.sidebar.slider("Ayudantes de Carga ($15 c/u):", 0, 6, 2)
+personal = st.sidebar.slider("Ayudantes:", 0, 6, 2)
 
 st.sidebar.markdown("---")
 
 # Inputs de Materiales
 st.sidebar.subheader("📦 Materiales")
-cajas = st.sidebar.number_input("Cartones ($1.50 c/u):", 0, 50, 10)
-rollos = st.sidebar.number_input("Rollos Embalaje ($20 c/u):", 0, 10, 1)
+cajas = st.sidebar.number_input("Cartones ($1.50):", 0, 50, 10)
+rollos = st.sidebar.number_input("Rollos Embalaje ($20):", 0, 10, 1)
 
 # Servicios Premium
 st.sidebar.markdown("---")
-st.sidebar.subheader("💎 Extras")
-proteccion_delicada = st.sidebar.checkbox("Protección Objetos Delicados (+$50)")
+st.sidebar.subheader("💎 Servicios Extra")
+proteccion_delicada = st.sidebar.checkbox("Protección Delicados (+$50)")
 costo_delicados = 50 if proteccion_delicada else 0
 
 servicio_empaque = st.sidebar.radio(
-    "¿Servicio de Empacado?",
-    ["Yo empaco ($0)", 
+    "Servicio de Empaque:",
+    ["Cliente empaca ($0)", 
      "Básico (+$30)", 
      "Completo (+$50)"]
 )
@@ -101,12 +154,11 @@ elif "Completo" in servicio_empaque:
 else:
     costo_empaque = 0
 
-# --- NUEVO CAMPO: DETALLE DE CARGA ---
+# --- INVENTARIO ---
 st.sidebar.markdown("---")
-st.sidebar.subheader("📝 ¿Qué vamos a mover?")
 detalle_inventario = st.sidebar.text_area(
-    "Ej: Una refri, cama king, sofá de 3 puestos...",
-    placeholder="Escribe aquí los muebles principales..."
+    "📝 Lista de muebles principales:",
+    placeholder="Ej: Cama, Refri, Sofá..."
 )
 
 # --- CÁLCULOS ---
@@ -130,72 +182,58 @@ porcentaje_ocupacion = min(volumen_estimado / datos_camion["cap"], 1.0)
 col1, col2 = st.columns(2)
 
 with col1:
-    st.subheader("Tu Resumen")
-    st.info(f"{datos_camion['icon']} **{seleccion}**")
+    st.subheader("Tu Selección")
+    # Tarjeta visual con estilo
+    st.info(f"""
+    **Vehículo:** {seleccion}  
+    **Distancia:** {distancia} km  
+    **Personal:** {personal} ayudantes
+    """)
     
-    st.write(f"📍 **Distancia:** {distancia} km")
-    st.write(f"👷 **Personal:** {personal} ayudantes")
     if detalle_inventario:
-        st.caption(f"**Notas:** {detalle_inventario}")
+        st.caption(f"**📦 Inventario:** {detalle_inventario}")
     
-    st.write("---")
-    st.caption("Ocupación sugerida:")
+    st.write("")
+    st.write("**Ocupación del Camión:**")
     st.progress(porcentaje_ocupacion)
     if porcentaje_ocupacion > 0.85:
-        st.warning("⚠️ Camión casi lleno")
+        st.warning("⚠️ ¡Espacio crítico!")
 
 with col2:
-    st.subheader("Presupuesto Estimado")
+    st.subheader("Presupuesto Final")
     
-    # Usamos markdown simple para evitar errores de color
+    # Tabla de desglose limpia
     st.markdown(f"""
-    * **Vehículo:** ${costo_base_camion}
-    * **Personal:** ${costo_total_personal}
-    * **Distancia:** ${costo_distancia:.2f}
-    * **Materiales:** ${total_materiales:.2f}
-    * **Empaque:** ${costo_empaque}
+    | Concepto | Precio |
+    | :--- | :---: |
+    | 🚛 Vehículo | ${costo_base_camion} |
+    | 👷 Personal | ${costo_total_personal} |
+    | 🛣️ Distancia | ${costo_distancia:.2f} |
+    | 📦 Materiales | ${total_materiales:.2f} |
+    | ✨ Servicios | ${costo_empaque} |
     """)
     
     st.divider()
     st.metric(label="TOTAL A PAGAR", value=f"${gran_total:.2f}")
 
-# --- BOTÓN DE WHATSAPP INTELIGENTE ---
-# Importante: Reemplaza el 593999999 por tu número REAL
-mi_numero = "593999999999" 
+# --- BOTÓN WHATSAPP ---
+mi_numero = "593999999999"  # <--- TU NÚMERO AQUÍ
 
 mensaje = f"""Hola Mudanza Prime 🚛
-Quiero reservar:
-- Vehículo: {seleccion}
-- Total estimado: ${gran_total:.2f}
-- Distancia: {distancia}km
-- Inventario: {detalle_inventario if detalle_inventario else 'No especificado'}
-
-¿Tienen disponibilidad?
+Solicito reserva:
+- *Total:* ${gran_total:.2f}
+- *Vehículo:* {seleccion}
+- *Distancia:* {distancia}km
+- *Detalle:* {detalle_inventario}
 """
-
 import urllib.parse
-mensaje_encoded = urllib.parse.quote(mensaje)
-link_whatsapp = f"https://wa.me/{mi_numero}?text={mensaje_encoded}"
+link_whatsapp = f"https://wa.me/{mi_numero}?text={urllib.parse.quote(mensaje)}"
 
+st.write("")
 st.markdown(f"""
-    <br>
     <a href="{link_whatsapp}" target="_blank" style="text-decoration: none;">
-        <button style="
-            width: 100%; 
-            background-color: #25D366; 
-            color: white; 
-            padding: 18px; 
-            border: none; 
-            border-radius: 12px; 
-            font-size: 20px; 
-            font-weight: bold; 
-            cursor: pointer;
-            box-shadow: 0px 4px 10px rgba(37, 211, 102, 0.4);
-            transition: transform 0.2s;">
-            📲 Enviar Pedido por WhatsApp
+        <button style="width: 100%; padding: 15px; font-size: 20px; cursor: pointer;">
+            RESERVAR AHORA 📲
         </button>
     </a>
-    <div style="text-align: center; margin-top: 10px; color: #666; font-size: 12px;">
-        *Al dar clic se abrirá tu WhatsApp con los datos listos.
-    </div>
     """, unsafe_allow_html=True)
