@@ -20,34 +20,34 @@ if modo_oscuro:
     COLOR_TEXTO = "#FFFFFF"      
     SIDEBAR_BG = "#1A1F2C"       
     SIDEBAR_TEXT = "#FFFFFF"     
-    COLOR_TITULO = "#A970FF"     
+    COLOR_TITULO = "#A970FF"     # Morado Neón para resaltar
     COLOR_INPUTS = "#262730"     
-    COLOR_CARD = "#1A1F2C"       # Color para tarjetas de info
+    COLOR_CARD = "#1A1F2C"       
 else:
     # DIURNO
     FONDO_APP = "#FFFFFF"        
-    COLOR_TEXTO = "#1F2937"      
+    COLOR_TEXTO = "#000000"      # Negro puro para evitar fantasmas
     SIDEBAR_BG = "#F3F4F6"       
     SIDEBAR_TEXT = "#000000"     
     COLOR_TITULO = "#2E004E"     
     COLOR_INPUTS = "#FFFFFF"     
-    COLOR_CARD = "#F9FAFB"       # Gris muy claro para tarjetas
+    COLOR_CARD = "#F9FAFB"       
 
-# --- ESTILOS CSS ---
+# --- ESTILOS CSS BLINDADOS ---
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700;800&display=swap');
 
     .stApp {{ background-color: {FONDO_APP}; font-family: 'Montserrat', sans-serif; }}
     
-    /* Textos */
-    h1, h2, h3, h4, p, li, .stMarkdown, .stTable, .stMetricLabel {{ color: {COLOR_TEXTO} !important; }}
+    /* Textos Generales */
+    h1, h2, h3, h4, p, li, .stMarkdown, .stTable {{ color: {COLOR_TEXTO} !important; }}
     
     /* Sidebar */
     section[data-testid="stSidebar"] {{ background-color: {SIDEBAR_BG}; }}
     section[data-testid="stSidebar"] h1, section[data-testid="stSidebar"] div, section[data-testid="stSidebar"] label {{ color: {SIDEBAR_TEXT} !important; }}
     
-    /* Logo Estilo Insignia */
+    /* Logo Insignia */
     div[data-testid="stImage"] img {{ background-color: white; padding: 8px; border-radius: 12px; }}
 
     /* Títulos */
@@ -60,7 +60,11 @@ st.markdown(f"""
         color: {COLOR_TEXTO}; opacity: 0.8; font-style: italic; margin-top: -10px;
     }}
 
-    /* Dropdowns (Corrección Fantasmas) */
+    /* CORRECCIÓN PRECIO FANTASMA */
+    div[data-testid="stMetricValue"] {{ color: {COLOR_TITULO} !important; font-size: 36px !important; }}
+    div[data-testid="stMetricLabel"] {{ color: {COLOR_TEXTO} !important; font-weight: bold !important; }}
+
+    /* CORRECCIÓN MENÚS DESPLEGABLES (DROPDOWNS) */
     ul[data-testid="stSelectboxVirtualDropdown"] {{ background-color: white !important; }}
     ul[data-testid="stSelectboxVirtualDropdown"] li {{ color: black !important; background-color: white !important; }}
     ul[data-testid="stSelectboxVirtualDropdown"] li:hover {{ background-color: #FFC300 !important; color: black !important; }}
@@ -81,11 +85,13 @@ st.markdown(f"""
     .disponible {{ background-color: #D1FAE5; color: #065F46; border: 1px solid #34D399; }}
     .ocupado {{ background-color: #FEE2E2; color: #991B1B; border: 1px solid #F87171; }}
     
-    /* Tarjetas de Beneficios (Marketing) */
+    /* Tarjetas de Beneficios */
     .beneficio-card {{
         background-color: {COLOR_CARD}; padding: 15px; border-radius: 10px;
         border-left: 5px solid {COLOR_SECUNDARIO}; margin-bottom: 10px;
+        color: {COLOR_TEXTO};
     }}
+    .beneficio-card b {{ color: {COLOR_TITULO}; }}
     </style>
     """, unsafe_allow_html=True)
 
@@ -126,28 +132,27 @@ costo_proteccion = 50 if proteccion else 0
 empaque = st.sidebar.radio("Empaque:", ["Cliente ($0)", "Básico (+$30)", "Completo (+$50)"])
 costo_empaque = 30 if "Básico" in empaque else (50 if "Completo" in empaque else 0)
 
-# --- NUEVO: INVENTARIO INTERACTIVO ---
+# --- INVENTARIO INTERACTIVO ---
 st.markdown("### 📝 ¿Qué vamos a llevar?")
-st.caption("Selecciona los objetos grandes para calcular mejor el espacio.")
+st.caption("Agrega los objetos grandes para calcular mejor el espacio.")
 
 col_sala, col_cuarto, col_cocina = st.columns(3)
 with col_sala:
-    st.markdown("**🛋️ Sala / Comedor**")
+    st.markdown("**🛋️ Sala**")
     sofas = st.number_input("Sofás:", 0, 5, 0)
     mesas = st.number_input("Mesas:", 0, 3, 0)
     sillas = st.number_input("Sillas:", 0, 12, 0)
 with col_cuarto:
-    st.markdown("**🛏️ Dormitorio**")
+    st.markdown("**🛏️ Cuarto**")
     camas = st.number_input("Camas:", 0, 5, 0)
     armarios = st.number_input("Armarios:", 0, 5, 0)
     tv = st.number_input("TVs:", 0, 5, 0)
 with col_cocina:
-    st.markdown("**🍳 Electrodomésticos**")
+    st.markdown("**🍳 Cocina**")
     refris = st.number_input("Refris:", 0, 2, 0)
     cocinas = st.number_input("Cocinas:", 0, 2, 0)
     lavadoras = st.number_input("Lavadoras:", 0, 2, 0)
 
-# Crear resumen de texto para WhatsApp
 lista_objetos = []
 if sofas > 0: lista_objetos.append(f"{sofas} Sofás")
 if mesas > 0: lista_objetos.append(f"{mesas} Mesas")
@@ -173,13 +178,12 @@ with col_hor:
     ]
     opts = [h["h"] for h in horarios if not h["oc"]]
     
-    # Mostrar estado visual
     for h in horarios:
         st.markdown(f'<div class="horario-box {"ocupado" if h["oc"] else "disponible"}">{"🔴" if h["oc"] else "🟢"} {h["h"]}</div>', unsafe_allow_html=True)
     
     hora_final = st.selectbox("Elige hora:", opts) if opts else "Lleno"
 
-# --- MARKETING & CONFIANZA (SECCIÓN NUEVA) ---
+# --- MARKETING MEJORADO (SIN PUNTUALIDAD) ---
 st.divider()
 st.subheader("🌟 ¿Por qué Mudanza Prime?")
 col_m1, col_m2 = st.columns(2)
@@ -187,17 +191,20 @@ with col_m1:
     st.markdown(f"""
     <div class="beneficio-card">
     <b>🛡️ Garantía de Cuidado</b><br>
-    Tratamos tus muebles como si fueran nuestros.
+    Tus muebles son tratados con máxima delicadeza.
     </div>
     """, unsafe_allow_html=True)
+    
+    # CAMBIO AQUÍ: PUNTUALIDAD -> PERSONAL EXPERTO
     st.markdown(f"""
     <div class="beneficio-card">
-    <b>⚡ Puntualidad Prime</b><br>
-    Llegamos a la hora pactada, sin excusas.
+    <b>👷 Personal Experto</b><br>
+    Equipo capacitado para maniobras difíciles.
     </div>
     """, unsafe_allow_html=True)
+
 with col_m2:
-    st.info("💡 **Tip de Experto:** Descongela tu refrigeradora 24 horas antes para evitar fugas de agua durante el viaje.")
+    st.info("💡 **Tip de Experto:** Descongela tu refrigeradora 24 horas antes y sécala bien para evitar fugas de agua durante el viaje.")
 
 # --- CÁLCULOS ---
 total = datos_camion["precio"] + (personal*15) + (distancia*1) + (cajas*1.5) + (rollos*20) + costo_proteccion + costo_empaque
@@ -210,9 +217,10 @@ with col_res1:
     st.write(f"**🗓️** {fecha} | {hora_final}")
     st.write(f"**🚛** {seleccion}")
     if lista_objetos:
-        st.caption(f"**📦 Items clave:** {resumen_inventario}")
+        st.caption(f"**📦 Items:** {resumen_inventario}")
 
 with col_res2:
+    st.subheader("Presupuesto") # Título explícito para que no quede hueco
     st.metric("TOTAL ESTIMADO", f"${total:.2f}")
 
 # --- WHATSAPP ---
