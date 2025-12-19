@@ -136,4 +136,84 @@ st.sidebar.header("🛠️ Configura tu Mudanza")
 opciones_vehiculo = {
     "Furgoneta (Pequeña)": {"precio": 30, "cap": 6, "icon": "🚐"},
     "Camión 2 Toneladas": {"precio": 40, "cap": 12, "icon": "🚛"},
-    "Camión 3.5 Tonel
+    "Camión 3.5 Toneladas": {"precio": 50, "cap": 20, "icon": "🚚"},
+    "Camión 6 Toneladas": {"precio": 60, "cap": 35, "icon": "🚛🚛"}
+}
+seleccion = st.sidebar.selectbox("Vehículo:", list(opciones_vehiculo.keys()))
+datos_camion = opciones_vehiculo[seleccion]
+
+st.sidebar.markdown("---")
+distancia = st.sidebar.number_input("Distancia (km):", 1, 500, 10)
+personal = st.sidebar.slider("Ayudantes:", 0, 6, 2)
+st.sidebar.markdown("---")
+cajas = st.sidebar.number_input("Cartones ($1.50):", 0, 100, 10)
+rollos = st.sidebar.number_input("Rollos ($20):", 0, 20, 1)
+
+# --- LÓGICA DE AGENDA ---
+st.subheader("📅 Agenda tu Fecha y Hora")
+col_fecha, col_hora = st.columns(2)
+with col_fecha:
+    fecha_seleccionada = st.date_input("Selecciona el día:", min_value=datetime.date.today())
+
+random.seed(f"{fecha_seleccionada}_{seleccion}") 
+ocupacion_simulada = random.choice([[False,False,False], [True,False,False], [False,True,False]])
+
+horarios = [
+    {"hora": "08:00 AM - 12:00 PM", "ocupado": ocupacion_simulada[0]},
+    {"hora": "11:00 AM - 03:00 PM", "ocupado": ocupacion_simulada[1]},
+    {"hora": "02:00 PM - 06:00 PM", "ocupado": ocupacion_simulada[2]},
+]
+
+with col_hora:
+    st.write(f"Disponibilidad para: **{seleccion}**")
+    opciones_disponibles = []
+    
+    for turno in horarios:
+        if turno["ocupado"]:
+            st.markdown(f'<div class="horario-box ocupado">🔴 {turno["hora"]} (Ocupado)</div>', unsafe_allow_html=True)
+        else:
+            st.markdown(f'<div class="horario-box disponible">🟢 {turno["hora"]} (Disponible)</div>', unsafe_allow_html=True)
+            opciones_disponibles.append(turno["hora"])
+
+    if opciones_disponibles:
+        hora_final = st.selectbox("Elige tu horario:", opciones_disponibles)
+    else:
+        hora_final = "Sin disponibilidad"
+        st.warning("Día completo.")
+
+st.divider()
+
+# --- CÁLCULOS Y RESUMEN ---
+costo_base = datos_camion["precio"]
+costo_personal = personal * 15
+costo_materiales = (cajas * 1.50) + (rollos * 20)
+costo_distancia = distancia * 1.0
+gran_total = costo_base + costo_personal + costo_materiales + costo_distancia
+
+col1, col2 = st.columns(2)
+with col1:
+    st.subheader("Tu Reserva")
+    st.info(f"""
+    **📅 Fecha:** {fecha_seleccionada}  
+    **⏰ Hora:** {hora_final}  
+    **🚛 Vehículo:** {seleccion}
+    """)
+    st.write(f"**Distancia:** {distancia} km | **Ayudantes:** {personal}")
+with col2:
+    st.subheader("Presupuesto")
+    st.markdown(f"""
+    | Concepto | Valor |
+    | :--- | :---: |
+    | Vehículo | ${costo_base} |
+    | Personal | ${costo_personal} |
+    | Materiales | ${costo_materiales} |
+    | Distancia | ${costo_distancia} |
+    """)
+    st.metric(label="TOTAL ESTIMADO", value=f"${gran_total:.2f}")
+
+# --- BOTÓN WHATSAPP ---
+mensaje = f"Hola Mudanza Prime! Quiero reservar:\n📅 {fecha_seleccionada}\n⏰ {hora_final}\n🚛 {seleccion}\n💰 Total: ${gran_total:.2f}"
+link_whatsapp = f"https://wa.me/593999999999?text={urllib.parse.quote(mensaje)}"
+
+if hora_final != "Sin disponibilidad":
+    st.markdown(f"""<a href="{link_whatsapp}" target="_blank" style="text-decoration: none;"><button>CONFIRMAR RESERVA 📲</button></a>""", unsafe_allow_html=True)
