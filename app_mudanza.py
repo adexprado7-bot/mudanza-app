@@ -4,23 +4,49 @@ import pandas as pd
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(page_title="Cotizador Mudanza Prime", page_icon="🚚", layout="centered")
 
-# --- ESTILOS CSS PERSONALIZADOS (Mejoras Visuales) ---
+# --- ESTILOS CSS (DISEÑO LIMPIO Y BLANCO) ---
 st.markdown("""
     <style>
-    .big-font { font-size:20px !important; color: #2E86C1; font-weight: bold; }
-    .stMetric { background-color: #f0f2f6; padding: 10px; border-radius: 10px; }
+    /* Forzar fondo blanco en toda la app */
+    .stApp {
+        background-color: #FFFFFF;
+    }
+    
+    /* Estilo del contenedor principal */
+    .main {
+        background-color: #FFFFFF;
+    }
+    
+    /* Títulos y textos en color oscuro para contraste */
+    h1, h2, h3 {
+        color: #1F2937 !important;
+    }
+    p, label, .stMarkdown {
+        color: #374151 !important;
+    }
+
+    /* Estilo de las métricas (Cajitas de precio) */
+    div[data-testid="stMetricValue"] {
+        color: #2E86C1; /* Azul corporativo */
+    }
+    
+    /* Botón personalizado */
+    .stButton>button {
+        background-color: #2E86C1;
+        color: white;
+    }
     </style>
     """, unsafe_allow_html=True)
 
 # --- TÍTULO ---
-st.title("🚚 Mudanza Prime | Cotizador")
-st.write("Calcula tu presupuesto exacto en segundos.")
+st.title("🚚 Mudanza Prime")
+st.write("Cotizador oficial | Rápido y seguro")
 st.divider()
 
 # --- BARRA LATERAL (INPUTS) ---
 st.sidebar.header("1. Elige tu Transporte")
 
-# Selección de Vehículo con los nuevos precios
+# Selección de Vehículo
 opciones_vehiculo = {
     "Furgoneta (Carga Ligera)": {"precio": 30, "cap": 6, "icon": "🚐"},
     "Camión 2 Toneladas": {"precio": 40, "cap": 12, "icon": "🚛"},
@@ -34,7 +60,7 @@ datos_camion = opciones_vehiculo[seleccion]
 # Inputs Básicos
 st.sidebar.header("2. Distancia y Personal")
 distancia = st.sidebar.number_input("Distancia recorrida (km):", min_value=1, value=10)
-costo_km = 1.0 # Puedes ajustar el precio por KM aquí si deseas
+costo_km = 1.0 
 personal = st.sidebar.slider("Cargadores ($15 c/u):", 0, 6, 2)
 
 # Inputs de Materiales y Servicios
@@ -76,8 +102,8 @@ total_servicios = costo_base_camion + costo_total_personal + costo_empaque + cos
 
 gran_total = total_materiales + total_servicios
 
-# Lógica visual de llenado (Simulación)
-volumen_estimado = (cajas * 0.1) + (personal * 1.5) # Estimación simple
+# Lógica visual de llenado
+volumen_estimado = (cajas * 0.1) + (personal * 1.5)
 porcentaje_ocupacion = min(volumen_estimado / datos_camion["cap"], 1.0)
 
 # --- PANTALLA PRINCIPAL (RESULTADOS) ---
@@ -85,25 +111,23 @@ porcentaje_ocupacion = min(volumen_estimado / datos_camion["cap"], 1.0)
 col1, col2 = st.columns(2)
 
 with col1:
-    st.markdown('<p class="big-font">Tu Selección</p>', unsafe_allow_html=True)
+    st.subheader("Tu Selección")
     st.info(f"{datos_camion['icon']} **{seleccion}**")
     
-    st.write(f"**Distancia:** {distancia} km")
-    st.write(f"**Personal:** {personal} cargadores")
+    st.write(f"📍 **Distancia:** {distancia} km")
+    st.write(f"👷 **Personal:** {personal} cargadores")
     
     st.write("---")
-    st.caption("Capacidad Estimada del Vehículo:")
+    st.caption("Ocupación Estimada:")
     st.progress(porcentaje_ocupacion)
-    if porcentaje_ocupacion > 0.85:
-        st.warning("⚠️ El camión podría ir muy lleno.")
 
 with col2:
-    st.markdown('<p class="big-font">Presupuesto</p>', unsafe_allow_html=True)
+    st.subheader("Presupuesto")
     
     # Desglose de precios
     lineas = [
         f"Base Vehículo: ${costo_base_camion}",
-        f"Personal ({personal}): ${costo_total_personal}",
+        f"Personal: ${costo_total_personal}",
         f"Distancia: ${costo_distancia:.2f}",
         f"Materiales: ${total_materiales:.2f}",
         f"Serv. Empaque: ${costo_empaque}"
@@ -123,17 +147,17 @@ st.markdown(f"""
     <a href="{link_whatsapp}" target="_blank">
         <button style="
             width: 100%; 
-            background-color: #25D366; 
+            background-color: #2E86C1; 
             color: white; 
             padding: 15px; 
             border: none; 
             border-radius: 10px; 
             font-size: 18px; 
             font-weight: bold; 
-            cursor: pointer;">
-            📲 Reservar por WhatsApp
+            cursor: pointer;
+            box-shadow: 0px 4px 6px rgba(0,0,0,0.1);
+            transition: all 0.3s;">
+            📲 Reservar Ahora
         </button>
     </a>
     """, unsafe_allow_html=True)
-
-st.caption("Nota: Precios referenciales sujetos a disponibilidad y ruta exacta.")
