@@ -26,12 +26,12 @@ else:
     # === PALETA DIURNA ===
     FONDO_APP = "#FFFFFF"        
     COLOR_TEXTO = "#1F2937"      
-    SIDEBAR_BG = "#F3F4F6"       # Gris un poco más oscuro para que contraste con el toggle
-    SIDEBAR_TEXT = "#000000"     # Negro puro para máxima legibilidad
+    SIDEBAR_BG = "#F3F4F6"       
+    SIDEBAR_TEXT = "#000000"     
     COLOR_TITULO = "#2E004E"     
     COLOR_INPUTS = "#FFFFFF"     
 
-# --- ESTILOS CSS (SOLUCIONES TÉCNICAS) ---
+# --- ESTILOS CSS (SOLUCIÓN DE LETRAS FANTASMAS) ---
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700;800&display=swap');
@@ -42,19 +42,17 @@ st.markdown(f"""
     /* 2. TEXTOS */
     h1, h2, h3, h4, p, li, .stMarkdown, .stTable, .stMetricLabel {{ color: {COLOR_TEXTO} !important; }}
     
-    /* 3. BARRA LATERAL (Sidebar) */
+    /* 3. BARRA LATERAL */
     section[data-testid="stSidebar"] {{ background-color: {SIDEBAR_BG}; }}
     section[data-testid="stSidebar"] h1, section[data-testid="stSidebar"] h2, section[data-testid="stSidebar"] label, section[data-testid="stSidebar"] span, section[data-testid="stSidebar"] div {{
         color: {SIDEBAR_TEXT} !important;
     }}
     
-    /* 4. SOLUCIÓN LOGO (Marco estilo Sticker) */
-    /* Esto crea un fondo blanco redondeado detrás de la imagen para que no se vea el cuadro feo */
+    /* 4. SOLUCIÓN LOGO (Estilo Insignia) */
     div[data-testid="stImage"] img {{
         background-color: white;
-        padding: 5px;
-        border-radius: 15px;
-        box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
+        padding: 8px;
+        border-radius: 12px;
     }}
 
     /* 5. TÍTULO Y SLOGAN */
@@ -75,17 +73,32 @@ st.markdown(f"""
         color: {COLOR_TEXTO};
         opacity: 0.8;
         font-style: italic;
-        margin-top: -15px;
+        margin-top: -10px;
     }}
 
-    /* 6. SOLUCIÓN LETRAS FANTASMAS (Dropdowns) */
-    /* Forzamos que el menú desplegable sea siempre blanco con letras negras */
-    div[data-baseweb="popover"] {{ background-color: white !important; }}
-    div[data-baseweb="select"] ul {{ background-color: white !important; color: black !important; }}
-    li[role="option"] {{ color: black !important; }}
+    /* 6. CORRECCIÓN SUPREMA DE DROPDOWNS (Menús Desplegables) */
+    /* Esto fuerza a que la lista desplegable SIEMPRE sea blanca con letras negras */
+    ul[data-testid="stSelectboxVirtualDropdown"] {{
+        background-color: white !important;
+    }}
+    ul[data-testid="stSelectboxVirtualDropdown"] li {{
+        color: black !important;
+        background-color: white !important;
+    }}
+    /* Color al pasar el mouse por encima de una opción */
+    ul[data-testid="stSelectboxVirtualDropdown"] li:hover {{
+        background-color: #FFC300 !important; /* Amarillo marca */
+        color: black !important;
+    }}
     
-    /* 7. INPUTS */
-    .stNumberInput input, .stSelectbox div[data-baseweb="select"], .stTextArea textarea {{
+    /* El texto de la caja cerrada */
+    div[data-baseweb="select"] > div {{
+        background-color: {COLOR_INPUTS} !important;
+        color: {COLOR_TEXTO} !important;
+    }}
+    
+    /* 7. INPUTS GENERALES */
+    .stNumberInput input, .stTextArea textarea {{
         color: {COLOR_TEXTO} !important;
         background-color: {COLOR_INPUTS};
     }}
@@ -115,7 +128,6 @@ with col_logo:
     except: st.write("🚚") 
 with col_titulo:
     st.markdown('<p class="titulo-principal">MUDANZA PRIME</p>', unsafe_allow_html=True)
-    # SLOGAN NUEVO
     st.markdown('<p class="slogan">Movemos lo que más quieres.</p>', unsafe_allow_html=True)
 
 st.divider()
@@ -123,13 +135,14 @@ st.divider()
 # --- SIDEBAR ---
 st.sidebar.header("🛠️ Cotización")
 
+# SELECCIÓN DE VEHÍCULO
 opciones_vehiculo = {
     "Furgoneta (Pequeña)": {"precio": 30, "cap": 6},
     "Camión 2 Toneladas": {"precio": 40, "cap": 12},
     "Camión 3.5 Toneladas": {"precio": 50, "cap": 20},
     "Camión 6 Toneladas": {"precio": 60, "cap": 35}
 }
-seleccion = st.sidebar.selectbox("Vehículo:", list(opciones_vehiculo.keys()))
+seleccion = st.sidebar.selectbox("Selecciona Vehículo:", list(opciones_vehiculo.keys()))
 datos_camion = opciones_vehiculo[seleccion]
 
 st.sidebar.markdown("---")
@@ -141,7 +154,7 @@ st.sidebar.subheader("📦 Materiales")
 cajas = st.sidebar.number_input("Cartones ($1.50):", 0, 100, 10)
 rollos = st.sidebar.number_input("Rollos ($20):", 0, 20, 1)
 
-# --- RECUPERAMOS LOS SERVICIOS PREMIUM ---
+# --- SERVICIOS PREMIUM ---
 st.sidebar.markdown("---")
 st.sidebar.subheader("💎 Servicios Extra")
 
@@ -156,7 +169,7 @@ if "Básico" in servicio_empaque: costo_empaque = 30
 elif "Completo" in servicio_empaque: costo_empaque = 50
 else: costo_empaque = 0
 
-# --- LÓGICA DE AGENDA ---
+# --- AGENDA ---
 st.subheader("📅 Agenda tu Fecha y Hora")
 col_fecha, col_hora = st.columns(2)
 with col_fecha:
@@ -204,7 +217,7 @@ with col1:
     **⏰ Hora:** {hora_final}  
     **🚛 Vehículo:** {seleccion}
     """)
-    st.write(f"**Extras:** Empaque {servicio_empaque} | Protec. {proteccion_delicada}")
+    st.write(f"**Extras:** {servicio_empaque} | Protec: {'Sí' if proteccion_delicada else 'No'}")
 
 with col2:
     st.subheader("Presupuesto")
