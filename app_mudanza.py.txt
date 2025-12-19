@@ -1,0 +1,90 @@
+import streamlit as st
+import pandas as pd
+
+# --- CONFIGURACIÓN DE LA PÁGINA ---
+st.set_page_config(page_title="Mudanza Prime App", page_icon="🚚", layout="centered")
+
+# --- TÍTULO Y ENCABEZADO ---
+st.title("🚚 Cotizador Mudanza Prime")
+st.write("Calcula tu mudanza ideal seleccionando los recursos necesarios.")
+
+# --- BARRA LATERAL (INPUTS DEL USUARIO) ---
+st.sidebar.header("1. Detalles del Servicio")
+
+# Selección de Camión
+tipo_camion = st.sidebar.selectbox(
+    "Selecciona el tamaño del camión:",
+    ("Pequeño (1-2 Hab)", "Mediano (3-4 Hab)", "Grande (Casa Completa)")
+)
+
+# Definir precios base y capacidad según camión
+if tipo_camion == "Pequeño (1-2 Hab)":
+    precio_base = 80
+    capacidad_max_m3 = 15
+    imagen_camion = "🚛"
+elif tipo_camion == "Mediano (3-4 Hab)":
+    precio_base = 150
+    capacidad_max_m3 = 30
+    imagen_camion = "🚛🚛"
+else:
+    precio_base = 250
+    capacidad_max_m3 = 60
+    imagen_camion = "🚛🚛🚛"
+
+# Inputs numéricos
+distancia = st.sidebar.number_input("Distancia aproximada (km):", min_value=1, value=10)
+personal = st.sidebar.slider("Cantidad de Personal (Cargadores):", 1, 6, 2)
+pisos = st.sidebar.radio("¿Hay ascensor?", ["Sí", "No (Escaleras)"])
+
+st.sidebar.header("2. Materiales de Embalaje")
+cajas = st.sidebar.number_input("Cantidad de Cajas (Cartones):", min_value=0, value=10)
+rollos = st.sidebar.number_input("Rollos de plástico/burbuja:", min_value=0, value=2)
+
+# --- CÁLCULOS LÓGICOS (BACKEND) ---
+costo_km = 1.5  # Precio por kilómetro
+costo_personal = 25  # Precio por persona
+costo_caja = 2.50
+costo_rollo = 5.00
+recargo_escaleras = 20 if pisos == "No (Escaleras)" else 0
+
+# Cálculo total
+total_materiales = (cajas * costo_caja) + (rollos * costo_rollo)
+total_servicio = precio_base + (distancia * costo_km) + (personal * costo_personal) + recargo_escaleras
+total_final = total_servicio + total_materiales
+
+# Estimación de volumen (Simulación de lógica)
+volumen_estimado = (cajas * 0.1) + (personal * 2) # Lógica simple para el ejemplo
+porcentaje_ocupacion = min(volumen_estimado / capacidad_max_m3, 1.0)
+
+# --- VISUALIZACIÓN DE RESULTADOS (FRONTEND) ---
+st.divider()
+
+col1, col2 = st.columns(2)
+
+with col1:
+    st.subheader("Resumen Visual")
+    st.write(f"**Camión seleccionado:** {tipo_camion}")
+    st.write(f"**Icono:** {imagen_camion}")
+    
+    # Barra de Ocupación del Camión (Mejora Visual)
+    st.write("📦 **Ocupación estimada del camión:**")
+    st.progress(porcentaje_ocupacion)
+    if porcentaje_ocupacion > 0.9:
+        st.warning("⚠️ ¡Cuidado! El camión está casi lleno. Considera uno más grande.")
+    else:
+        st.success("✅ Espacio suficiente.")
+
+with col2:
+    st.subheader("Cotización Final")
+    st.metric(label="Total Estimado", value=f"${total_final:.2f}")
+    
+    # Desglose rápido
+    st.write("---")
+    st.caption(f"Transporte base: ${precio_base}")
+    st.caption(f"Materiales: ${total_materiales}")
+    st.caption(f"Personal ({personal}): ${personal * costo_personal}")
+
+# --- BOTÓN DE ACCIÓN ---
+if st.button("📅 Reservar esta Mudanza"):
+    st.balloons()
+    st.success(f"¡Cotización de ${total_final:.2f} enviada! Un asesor te contactará.")
