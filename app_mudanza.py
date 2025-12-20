@@ -283,3 +283,16 @@ with c_lista:
     </div>
     
     <div class="t-row" style="border-top: 2px dashed #eee; margin-top:10px;">
+        <div style="display:flex; align-items:center;">
+            <div class="t-title" style="color:{COLOR_MORADO}; font-size:18px;">TOTAL FINAL</div>
+        </div>
+        <div class="t-price" style="font-size:22px;">${total:.2f}</div>
+    </div>
+</div>
+"""
+    st.markdown(html_code, unsafe_allow_html=True)
+
+with c_info:
+    st.markdown("##### Tus Beneficios")
+    st.info("**Ahorro Prime**\n\nReserva con anticipación para descuentos en materiales.")
+    st.success("**Garantía**\n\nTransporte asegurado contra daños básicos.")
