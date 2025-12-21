@@ -12,8 +12,6 @@ COLOR_AMARILLO = "#FFC300"
 FONDO_APP = "#F4F6F8"
 COLOR_TEXTO = "#1F2937"
 COLOR_CARD_BG = "#FFFFFF"
-
-# --- TU NÚMERO DE WHATSAPP ---
 NUMERO_WHATSAPP = "593998994518"
 
 # --- FUNCIÓN PDF ---
@@ -38,12 +36,10 @@ def generar_pdf(fecha, camion, personal, materiales, accesos_txt, inventario_txt
     pdf.set_fill_color(240, 240, 240)
     pdf.cell(0, 10, txt=f"Fecha Emisión: {datetime.date.today()}", ln=1, fill=True)
     pdf.ln(5)
-    
     pdf.set_text_color(0, 0, 0)
     pdf.cell(0, 10, txt=f"Fecha Solicitada: {fecha}", ln=1)
     pdf.cell(0, 10, txt=f"Vehículo: {camion}", ln=1)
     pdf.cell(0, 10, txt=f"Accesos: {accesos_txt}", ln=1)
-    
     if len(inventario_txt) > 5:
         pdf.ln(5)
         pdf.set_font("Arial", 'B', 10)
@@ -51,27 +47,20 @@ def generar_pdf(fecha, camion, personal, materiales, accesos_txt, inventario_txt
         pdf.set_font("Arial", size=9)
         pdf.multi_cell(0, 6, txt=inventario_txt)
         pdf.ln(5)
-        
     pdf.set_font("Arial", 'B', 12)
     pdf.cell(140, 10, "Descripción", 1)
     pdf.cell(50, 10, "Valor", 1, 1, 'C')
-    
     pdf.set_font("Arial", size=12)
     pdf.cell(140, 10, f"Transporte Base ({camion})", 1)
     pdf.cell(50, 10, f"${desglose['camion']:.2f}", 1, 1, 'R')
-    
     pdf.cell(140, 10, f"Personal ({personal} ayudantes)", 1)
     pdf.cell(50, 10, f"${desglose['personal']:.2f}", 1, 1, 'R')
-    
     pdf.cell(140, 10, "Recargo Pisos/Escaleras", 1)
     pdf.cell(50, 10, f"${desglose['pisos']:.2f}", 1, 1, 'R')
-    
     pdf.cell(140, 10, f"Materiales ({materiales})", 1)
     pdf.cell(50, 10, f"${desglose['materiales']:.2f}", 1, 1, 'R')
-    
     pdf.cell(140, 10, "Tarifa Ciudad", 1)
     pdf.cell(50, 10, "$0.00", 1, 1, 'R')
-    
     pdf.set_font("Arial", 'B', 14)
     pdf.set_text_color(46, 0, 78)
     pdf.cell(140, 15, "TOTAL ESTIMADO", 1)
@@ -85,26 +74,20 @@ st.markdown(f"""
     .stApp {{ background-color: {FONDO_APP}; font-family: 'Montserrat', sans-serif; }}
     h1, h2, h3, h4, h5, p, span, div, label, li {{ color: {COLOR_TEXTO} !important; }}
     
-    /* INPUTS BLANCOS */
     div[data-baseweb="input"], div[data-baseweb="base-input"], div[data-baseweb="select"], .stNumberInput div[data-baseweb="input"] {{
         background-color: white !important; border: 1px solid #ccc !important; color: black !important;
     }}
     input {{ color: black !important; caret-color: black !important; }}
     div[data-testid="stNumberInputContainer"] {{ background-color: white !important; color: black !important; }}
     
-    /* DROPDOWNS */
     ul[data-testid="stSelectboxVirtualDropdown"] {{ background-color: white !important; border: 1px solid #ccc !important; }}
     li[role="option"] {{ background-color: white !important; color: black !important; }}
     li[role="option"]:hover {{ background-color: {COLOR_AMARILLO} !important; color: black !important; }}
     
-    /* EXPANDER */
     .streamlit-expanderHeader {{ background-color: white !important; color: black !important; border: 1px solid #ccc; }}
     div[data-testid="stExpanderDetails"] {{ background-color: white !important; border: 1px solid #ccc; color: black !important; }}
-    
-    /* CHECKBOX */
     div[data-baseweb="checkbox"] p {{ color: {COLOR_TEXTO} !important; }}
 
-    /* VISUALES */
     .control-panel {{ background-color: {COLOR_CARD_BG}; padding: 20px; border-radius: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; }}
     .slogan-box {{ background-color: white; padding: 10px 20px; border-radius: 10px; border-left: 5px solid {COLOR_MORADO}; font-style: italic; color: #555 !important; margin-top: 5px; }}
     
@@ -151,8 +134,10 @@ c1, c2, c3, c4 = st.columns(4)
 with c1:
     st.markdown("**1. Fecha y Vehículo**")
     fecha_seleccionada = st.date_input("📅 Fecha", datetime.date.today())
-    # ACTUALIZACIÓN: Precios visibles en la lista
+    
+    # OPCIÓN "VACÍA" PARA INICIAR EN CERO
     vehiculos = {
+        "👉 Seleccione un Vehículo": {"precio": 0, "img": "❓"},
         "Furgoneta (Pequeña) - $30": {"precio": 30, "img": "🚐"},
         "Camión 2 Toneladas - $40": {"precio": 40, "img": "🚛"},
         "Camión 3.5 Toneladas - $50": {"precio": 50, "img": "🚚"},
@@ -163,7 +148,8 @@ with c1:
 
 with c2:
     st.markdown("**2. Personal**")
-    personal = st.slider("👷 Ayudantes", 0, 10, 2)
+    # INICIA EN 0
+    personal = st.slider("👷 Ayudantes", 0, 10, 0)
     st.caption("Tarifa: $15 c/u")
 
 with c3:
@@ -179,9 +165,8 @@ with c3:
 
 with c4:
     st.markdown("**4. Materiales**")
-    # ACTUALIZACIÓN: Precios visibles en la etiqueta
-    cajas = st.number_input("📦 Cajas ($1.50 c/u)", 0, 100, 10)
-    rollos = st.number_input("🗞️ Rollos ($20.00 c/u)", 0, 20, 1)
+    cajas = st.number_input("📦 Cajas ($1.50 c/u)", 0, 100, 0) # Inicia en 0
+    rollos = st.number_input("🗞️ Rollos ($20.00 c/u)", 0, 20, 0) # Inicia en 0
 
 st.markdown("</div>", unsafe_allow_html=True)
 
@@ -235,14 +220,30 @@ def calcular_recargo_piso(piso, ascensor):
     if piso in ["4", "5+"]: return 20
     return 0
 
-recargo_salida = calcular_recargo_piso(piso_salida, asc_salida)
-recargo_llegada = calcular_recargo_piso(piso_llegada, asc_llegada)
-precio_pisos = recargo_salida + recargo_llegada
+# Si no ha seleccionado camión, no cobramos pisos aún (para mantener el 0)
+if dato_camion["precio"] == 0:
+    precio_pisos = 0
+else:
+    recargo_salida = calcular_recargo_piso(piso_salida, asc_salida)
+    recargo_llegada = calcular_recargo_piso(piso_llegada, asc_llegada)
+    precio_pisos = recargo_salida + recargo_llegada
 
 precio_camion = dato_camion["precio"]
 precio_personal = personal * 15
 precio_materiales = (cajas * 1.5) + (rollos * 20)
 total = precio_camion + precio_personal + precio_materiales + precio_pisos
+
+# Lógica Dinámica de la Tarjeta Morada
+if total == 0:
+    titulo_card = "EMPIEZA AQUÍ"
+    icono_card = "👆"
+    monto_mostrar = "$0.00"
+    subtexto_card = "Selecciona un vehículo"
+else:
+    titulo_card = "VALOR A PAGAR"
+    icono_card = "💰"
+    monto_mostrar = f"${total:.2f}"
+    subtexto_card = "Tarifa Final Ciudad"
 
 # Texto de accesos
 txt_salida = f"{piso_salida} ({'Ascensor' if asc_salida else 'Escaleras'})"
@@ -253,10 +254,11 @@ accesos_txt = f"De: {txt_salida} -> A: {txt_llegada}"
 st.markdown("### 📊 Tu Cotización")
 k1, k2, k3 = st.columns(3)
 with k1:
+    # TARJETA MORADA DINÁMICA
     st.markdown(f"""
     <div class="hero-card card-purple">
-        <div><div class="card-label">PRESUPUESTO ESTIMADO</div><div class="card-amount">${total:.2f}</div></div>
-        <div style="display:flex; justify-content:space-between; align-items:end;"><div style="font-size:12px; opacity:0.8;">TARIFA FIJA CIUDAD</div><div style="font-size:24px;">💳</div></div>
+        <div><div class="card-label">{titulo_card}</div><div class="card-amount">{monto_mostrar}</div></div>
+        <div style="display:flex; justify-content:space-between; align-items:end;"><div style="font-size:12px; opacity:0.8;">{subtexto_card}</div><div style="font-size:24px;">{icono_card}</div></div>
     </div>""", unsafe_allow_html=True)
 with k2:
     st.markdown(f"""
@@ -310,6 +312,9 @@ html_desglose = f"""
     </div>
     <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee;">
         <span style="color:#666;">📦 Materiales</span><span style="font-weight:bold; color:{COLOR_TEXTO};">${precio_materiales:.2f}</span>
+    </div>
+    <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee;">
+        <span style="color:#666;">📍 Cobertura Ciudad</span><span style="font-weight:bold; color:#2E7D32;">Incluida</span>
     </div>
     <div style="display:flex; justify-content:space-between; padding:15px 0; margin-top:10px;">
         <span style="font-weight:bold; font-size:18px; color:{COLOR_MORADO};">TOTAL FINAL</span>
