@@ -27,26 +27,30 @@ class PDF(FPDF):
         self.set_y(-15)
         self.set_font('Arial', 'I', 8)
         self.set_text_color(128)
-        self.cell(0, 10, 'Mudanza Prime - Documento Informativo', 0, 0, 'C')
+        self.cell(0, 10, 'Mudanza Prime - Guayaquil | Documento Informativo', 0, 0, 'C')
 
 def generar_pdf(fecha, camion, personal, materiales, inventario_txt, total, desglose):
     pdf = PDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
     
-    # Datos
+    # Datos Generales
     pdf.set_fill_color(240, 240, 240)
     pdf.cell(0, 10, txt=f"Fecha Emisión: {datetime.date.today()}", ln=1, fill=True)
     pdf.ln(5)
+    
     pdf.set_text_color(0, 0, 0)
-    pdf.cell(0, 10, txt=f"Fecha Mudanza: {fecha}", ln=1)
+    pdf.cell(0, 10, txt=f"Fecha Programada: {fecha}", ln=1)
     pdf.cell(0, 10, txt=f"Vehículo: {camion}", ln=1)
-    if inventario_txt:
-        pdf.ln(2)
-        pdf.set_font("Arial", 'I', 10)
-        pdf.multi_cell(0, 8, txt=f"Inventario Declarado: {inventario_txt}")
-        pdf.set_font("Arial", size=12)
-    pdf.ln(10)
+    
+    # Inventario (Si existe)
+    if len(inventario_txt) > 5:
+        pdf.ln(5)
+        pdf.set_font("Arial", 'B', 10)
+        pdf.cell(0, 8, "Inventario Declarado:", ln=1)
+        pdf.set_font("Arial", size=9)
+        pdf.multi_cell(0, 6, txt=inventario_txt)
+        pdf.ln(5)
     
     # Tabla
     pdf.set_font("Arial", 'B', 12)
@@ -71,54 +75,65 @@ def generar_pdf(fecha, camion, personal, materiales, inventario_txt, total, desg
     
     return pdf.output(dest='S').encode('latin-1')
 
-# --- CSS SUPER BLINDADO (SOLUCIÓN FANTASMAS) ---
+# --- CSS SUPER BLINDADO (MODO CLARO FORZADO) ---
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
     
     .stApp {{ background-color: {FONDO_APP}; font-family: 'Montserrat', sans-serif; }}
-    h1, h2, h3, h4, p, span, div, label {{ color: {COLOR_TEXTO} !important; }}
     
-    /* --- SOLUCIÓN FANTASMAS --- */
-    /* 1. Cajas de selección (Selectbox) */
-    .stSelectbox > div > div {{
+    /* Forzar texto negro en general */
+    h1, h2, h3, h4, h5, p, span, div, label, li {{ color: {COLOR_TEXTO} !important; }}
+    
+    /* --- SOLUCIÓN INPUTS NEGROS (ELIMINAR TEMA OSCURO) --- */
+    
+    /* 1. Fondo blanco para inputs numéricos, de fecha y selectores */
+    .stNumberInput div[data-baseweb="input"],
+    .stDateInput div[data-baseweb="input"],
+    .stSelectbox div[data-baseweb="select"] {{
         background-color: white !important;
         color: black !important;
-        border-color: #ccc !important;
-    }}
-    /* Texto seleccionado visible */
-    .stSelectbox div[data-testid="stMarkdownContainer"] p {{
-        color: black !important;
+        border-radius: 8px !important;
+        border: 1px solid #d1d5db !important; /* Borde gris suave */
     }}
     
-    /* 2. Menú desplegable (Dropdown options) */
+    /* 2. El texto dentro de los inputs debe ser negro */
+    input {{
+        color: black !important;
+        caret-color: black !important;
+    }}
+    
+    /* 3. El contenedor interno de los números */
+    div[data-testid="stNumberInputContainer"] {{
+        background-color: white !important;
+    }}
+
+    /* 4. Menús desplegables (Dropdowns) */
     ul[data-testid="stSelectboxVirtualDropdown"] {{
         background-color: white !important;
     }}
     li[role="option"] {{
-        color: black !important;
         background-color: white !important;
+        color: black !important;
     }}
     li[role="option"]:hover {{
         background-color: {COLOR_AMARILLO} !important;
         color: black !important;
     }}
     
-    /* 3. Calendario */
-    .stDateInput > div > div {{
+    /* 5. Acordeón (Expander) */
+    .streamlit-expanderHeader {{
         background-color: white !important;
         color: black !important;
+        border-radius: 8px;
     }}
-    input[type="text"] {{
+    div[data-testid="stExpanderDetails"] {{
+        background-color: #f9fafb !important; /* Un gris muy clarito adentro */
         color: black !important;
+        border: 1px solid #e5e7eb;
+        border-radius: 0 0 8px 8px;
     }}
-    
-    /* 4. Inputs numéricos */
-    .stNumberInput > div > div {{
-        background-color: white !important;
-        color: black !important;
-    }}
-    
+
     /* ESTILOS DE DISEÑO */
     .control-panel {{
         background-color: {COLOR_CARD_BG}; padding: 20px; border-radius: 15px;
@@ -136,7 +151,6 @@ st.markdown(f"""
     .card-purple div {{ color: white !important; }}
     .card-yellow {{ background: linear-gradient(135deg, {COLOR_AMARILLO} 0%, #ffca28 100%); }}
     .card-yellow div {{ color: {COLOR_MORADO} !important; }}
-    
     .card-label {{ font-size: 12px; font-weight: 700; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; }}
     .card-amount {{ font-size: 32px; font-weight: 800; margin-top: 5px; }}
 
@@ -188,14 +202,14 @@ st.markdown("### ⚙️ Configura tu Servicio")
 c1, c2, c3 = st.columns(3)
 with c1:
     st.markdown("**1. Fecha y Vehículo**")
-    fecha_seleccionada = st.date_input("📅 Fecha de Mudanza", datetime.date.today())
+    fecha_seleccionada = st.date_input("📅 Fecha", datetime.date.today())
     vehiculos = {
         "Furgoneta (Pequeña)": {"precio": 30, "img": "🚐"},
         "Camión 2 Toneladas": {"precio": 40, "img": "🚛"},
         "Camión 3.5 Toneladas": {"precio": 50, "img": "🚚"},
         "Camión 6 Toneladas": {"precio": 60, "img": "🚛🚛"}
     }
-    seleccion = st.selectbox("🚛 Tamaño del Camión", list(vehiculos.keys()))
+    seleccion = st.selectbox("🚛 Camión", list(vehiculos.keys()))
     dato_camion = vehiculos[seleccion]
 
 with c2:
@@ -211,33 +225,73 @@ with c3:
 
 st.markdown("</div>", unsafe_allow_html=True)
 
-# --- INVENTARIO DESPLEGABLE (NUEVO) ---
-# Aquí está la lista de objetos que pediste
+# --- INVENTARIO ESTRUCTURADO (NUEVO DISEÑO) ---
 lista_objetos = []
-with st.expander("📝 LISTA DE OBJETOS / INVENTARIO (Clic para desplegar)"):
-    st.caption("Marca los objetos grandes que vas a transportar:")
-    col_inv1, col_inv2, col_inv3 = st.columns(3)
+
+# Usamos un expander que por CSS ahora será blanco
+with st.expander("📝 LISTA DE INVENTARIO (Clic para desplegar)", expanded=True):
+    col_inv_1, col_inv_2, col_inv_3, col_inv_4 = st.columns(4)
     
-    with col_inv1:
-        st.markdown("**🛋️ Sala**")
-        sofas = st.number_input("Sofás", 0, 5, 0, key="inv_sofa")
-        mesas = st.number_input("Mesas", 0, 3, 0, key="inv_mesa")
-    with col_inv2:
-        st.markdown("**🛏️ Dormitorio**")
-        camas = st.number_input("Camas", 0, 5, 0, key="inv_cama")
-        armarios = st.number_input("Armarios", 0, 3, 0, key="inv_armario")
-    with col_inv3:
-        st.markdown("**🍳 Electrodomésticos**")
-        refris = st.number_input("Refris", 0, 2, 0, key="inv_refri")
-        lavadoras = st.number_input("Lavadoras", 0, 2, 0, key="inv_lava")
-    
-    # Construimos el texto del inventario
-    if sofas: lista_objetos.append(f"{sofas} Sofás")
-    if mesas: lista_objetos.append(f"{mesas} Mesas")
-    if camas: lista_objetos.append(f"{camas} Camas")
-    if armarios: lista_objetos.append(f"{armarios} Armarios")
-    if refris: lista_objetos.append(f"{refris} Refris")
-    if lavadoras: lista_objetos.append(f"{lavadoras} Lavadoras")
+    # 1. LÍNEA BLANCA
+    with col_inv_1:
+        st.markdown("##### ❄️ Línea Blanca")
+        st.caption("Electrodomésticos grandes")
+        
+        # Refrigeradora con selector de tipo
+        tipo_refri = st.selectbox("Tipo de Refri", ["Ninguna", "Normal", "Side by Side (Grande)"])
+        if tipo_refri != "Ninguna":
+            lista_objetos.append(f"Refri {tipo_refri}")
+            
+        cocina = st.number_input("Cocina", 0, 5, 0, key="inv_cocina")
+        lavadora = st.number_input("Lavadora", 0, 5, 0, key="inv_lavadora")
+        secadora = st.number_input("Secadora", 0, 5, 0, key="inv_secadora")
+        
+        if cocina: lista_objetos.append(f"{cocina} Cocina")
+        if lavadora: lista_objetos.append(f"{lavadora} Lavadora")
+        if secadora: lista_objetos.append(f"{secadora} Secadora")
+
+    # 2. SALA
+    with col_inv_2:
+        st.markdown("##### 🛋️ Sala")
+        st.caption("Muebles principales")
+        
+        mesa_centro = st.number_input("Mesa de Centro", 0, 5, 0, key="inv_mesa_centro")
+        muebles_sala = st.number_input("Muebles (Sofás)", 0, 10, 0, key="inv_sofas")
+        esquinero = st.number_input("Esquinero", 0, 5, 0, key="inv_esquinero")
+        
+        if mesa_centro: lista_objetos.append(f"{mesa_centro} Mesa Centro")
+        if muebles_sala: lista_objetos.append(f"{muebles_sala} Sofás")
+        if esquinero: lista_objetos.append(f"{esquinero} Esquinero")
+
+    # 3. COMEDOR
+    with col_inv_3:
+        st.markdown("##### 🍽️ Comedor")
+        st.caption("Mesas y sillas")
+        
+        # Material de la mesa
+        tiene_mesa = st.checkbox("¿Lleva Mesa?")
+        if tiene_mesa:
+            material_mesa = st.selectbox("Material Mesa", ["Madera", "Vidrio", "Mármol"])
+            lista_objetos.append(f"Mesa Comedor ({material_mesa})")
+            
+        sillas = st.number_input("Sillas", 0, 12, 0, key="inv_sillas")
+        bufetera = st.number_input("Bufetera", 0, 5, 0, key="inv_bufetera")
+        
+        if sillas: lista_objetos.append(f"{sillas} Sillas")
+        if bufetera: lista_objetos.append(f"{bufetera} Bufetera")
+
+    # 4. DORMITORIOS
+    with col_inv_4:
+        st.markdown("##### 🛏️ Dormitorios")
+        st.caption("Habitaciones")
+        
+        camas = st.number_input("Camas (Todo tamaño)", 0, 10, 0, key="inv_camas")
+        veladores = st.number_input("Veladores", 0, 10, 0, key="inv_veladores")
+        comodas = st.number_input("Cómodas", 0, 5, 0, key="inv_comodas")
+        
+        if camas: lista_objetos.append(f"{camas} Camas")
+        if veladores: lista_objetos.append(f"{veladores} Veladores")
+        if comodas: lista_objetos.append(f"{comodas} Cómodas")
 
 inventario_final = ", ".join(lista_objetos) if lista_objetos else "No especificado"
 
@@ -272,7 +326,7 @@ st.write("")
 
 # --- ACCIONES RÁPIDAS ---
 ac1, ac2, ac3 = st.columns(3)
-msg = f"Hola Mudanza Prime. Quiero reservar: {seleccion} ({fecha_str}). Total: ${total:.2f}. Inventario: {inventario_final}"
+msg = f"Hola Mudanza Prime. Reserva: {seleccion} ({fecha_str}). Total: ${total:.2f}. Inv: {inventario_final}"
 lnk = f"https://wa.me/593999999999?text={urllib.parse.quote(msg)}"
 
 def btn(i, t, c, l="#"): 
@@ -312,9 +366,8 @@ html_desglose = f"""
 """
 st.markdown(html_desglose, unsafe_allow_html=True)
 
-# --- BOTÓN FACTURA (IZQUIERDA) ---
+# --- BOTÓN FACTURA ---
 col_pdf_left, col_pdf_space = st.columns([1, 4])
-
 with col_pdf_left:
     pdf_bytes = generar_pdf(
         fecha=fecha_str,
