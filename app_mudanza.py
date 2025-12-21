@@ -2,6 +2,8 @@ import streamlit as st
 import datetime
 import urllib.parse
 from fpdf import FPDF
+import base64
+import os
 
 # --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(page_title="Mudanza Prime | Cotizador", page_icon="🚚", layout="wide")
@@ -14,6 +16,15 @@ COLOR_TEXTO = "#1F2937"
 COLOR_CARD_BG = "#FFFFFF"
 NUMERO_WHATSAPP = "593998994518"
 
+# --- FUNCIÓN PARA LEER IMAGEN Y CONVERTIR A BASE64 (SOLUCIÓN DEL ERROR) ---
+def get_image_base64(path):
+    try:
+        with open(path, "rb") as image_file:
+            encoded = base64.b64encode(image_file.read()).decode()
+        return f"data:image/png;base64,{encoded}"
+    except Exception as e:
+        return None # Si falla, devuelve None
+
 # --- FUNCIÓN LIMPIEZA TEXTO ---
 def clean_text(text):
     return text.encode('latin-1', 'ignore').decode('latin-1')
@@ -21,14 +32,23 @@ def clean_text(text):
 # --- CLASE PDF ---
 class PDF(FPDF):
     def header(self):
-        # Intentamos poner el logo en el PDF también si es posible
-        # self.image('logo.png', 10, 8, 33) 
-        self.set_font('Arial', 'B', 20)
+        # Intentamos poner el logo en el PDF (FPDF sí lee archivos locales directo)
+        if os.path.exists("logo.png"):
+            try:
+                # Ajusta la posición (x, y) y el ancho (w) según necesites
+                self.image('logo.png', x=80, y=10, w=50) 
+                self.ln(25) # Bajamos el cursor para no escribir encima del logo
+            except:
+                pass # Si falla el logo en PDF, no bloqueamos la app
+        
+        # Si no hay logo, o debajo del logo, ponemos el texto
+        self.set_font('Arial', 'B', 16)
         self.set_text_color(46, 0, 78) 
-        self.cell(0, 10, clean_text('MUDANZA PRIME'), 0, 1, 'C')
+        # self.cell(0, 10, clean_text('MUDANZA PRIME'), 0, 1, 'C') # Opcional si ya sale el logo
         self.set_font('Arial', 'I', 10)
         self.cell(0, 5, clean_text('Detalle de Solicitud de Servicio'), 0, 1, 'C')
         self.ln(10)
+        
     def footer(self):
         self.set_y(-15)
         self.set_font('Arial', 'I', 8)
@@ -75,31 +95,30 @@ def generar_pdf(fecha, camion, personal, materiales, accesos_txt, inventario_txt
     pdf.cell(50, 15, f"${total:.2f}", 1, 1, 'R')
     return pdf.output(dest='S').encode('latin-1', 'ignore')
 
-# --- CSS BLINDADO + ESTILO LOGO PNG ---
+# --- CSS BLINDADO ---
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
     .stApp {{ background-color: {FONDO_APP}; font-family: 'Montserrat', sans-serif; }}
     h1, h2, h3, h4, h5, p, span, div, label, li {{ color: {COLOR_TEXTO} !important; }}
     
-    /* --- ESTILO LOGO FLOTANTE (PNG) --- */
+    /* --- ESTILO LOGO FLOTANTE --- */
     .logo-container {{
         display: flex;
         justify-content: center;
         align-items: center;
-        padding: 10px 0 40px 0; /* Espaciado */
+        padding: 10px 0 40px 0;
     }}
     .logo-container img {{
-        max-width: 300px; /* Tamaño ideal */
+        max-width: 300px;
         height: auto;
-        /* Quitamos box-shadow y border-radius para que el PNG transparente luzca bien */
-        filter: drop-shadow(0px 5px 10px rgba(0,0,0,0.1)); /* Sombra que respeta la forma del PNG */
+        filter: drop-shadow(0px 5px 10px rgba(0,0,0,0.1));
         transition: transform 0.3s ease;
     }}
     .logo-container img:hover {{
-        transform: scale(1.05); /* Efecto zoom suave */
+        transform: scale(1.05);
     }}
-    /* --------------------------------------- */
+    /* -------------------------- */
 
     div[data-baseweb="input"], div[data-baseweb="base-input"], div[data-baseweb="select"] {{
         background-color: white !important; border: 1px solid #ccc !important; color: black !important;
@@ -143,12 +162,19 @@ st.markdown(f"""
     </style>
 """, unsafe_allow_html=True)
 
-# --- CABECERA CLEAN (LOGO PNG) ---
-st.markdown("""
-    <div class="logo-container">
-        <img src="logo.png" alt="Mudanza Prime">
-    </div>
-""", unsafe_allow_html=True)
+# --- CABECERA (LOGICA BASE64 PARA QUE NO FALLE) ---
+img_base64 = get_image_base64("logo.png")
+
+if img_base64:
+    # Si encuentra el logo, lo muestra bonito
+    st.markdown(f"""
+        <div class="logo-container">
+            <img src="{img_base64}" alt="Mudanza Prime">
+        </div>
+    """, unsafe_allow_html=True)
+else:
+    # Si NO encuentra el logo, muestra un título elegante en texto (Plan B)
+    st.markdown(f"<h1 style='text-align: center; color: {COLOR_MORADO}; font-size: 50px;'>MUDANZA PRIME</h1>", unsafe_allow_html=True)
 
 
 # --- PANEL DE CONFIGURACIÓN ---
