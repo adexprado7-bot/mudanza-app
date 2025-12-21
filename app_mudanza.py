@@ -14,9 +14,8 @@ COLOR_TEXTO = "#1F2937"
 COLOR_CARD_BG = "#FFFFFF"
 NUMERO_WHATSAPP = "593998994518"
 
-# --- FUNCIÓN PARA LIMPIAR TEXTO (ADIÓS ERROR UNICODE) ---
+# --- FUNCIÓN LIMPIEZA TEXTO ---
 def clean_text(text):
-    # Esta función elimina emojis y caracteres raros para que el PDF no falle
     return text.encode('latin-1', 'ignore').decode('latin-1')
 
 # --- CLASE PDF ---
@@ -34,23 +33,24 @@ class PDF(FPDF):
         self.set_text_color(128)
         self.cell(0, 10, clean_text('Mudanza Prime - Guayaquil | Cotizacion sujeta a disponibilidad'), 0, 0, 'C')
 
-def generar_pdf(fecha, camion, personal, materiales, accesos_txt, inventario_txt, total, desglose):
+def generar_pdf(fecha, camion, personal, materiales, accesos_txt, inventario_txt, total, pago_seleccionado, desglose):
     pdf = PDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
     
-    # Fecha Emisión
+    # Fecha
     pdf.set_fill_color(240, 240, 240)
     pdf.cell(0, 10, txt=clean_text(f"Fecha Emision: {datetime.date.today()}"), ln=1, fill=True)
     pdf.ln(5)
     
-    # Detalles Generales (Usamos clean_text para quitar emojis)
+    # Datos
     pdf.set_text_color(0, 0, 0)
     pdf.cell(0, 10, txt=clean_text(f"Fecha Solicitada: {fecha}"), ln=1)
-    # Quitamos el precio del nombre del camión para el PDF para que se vea limpio
     nombre_camion_limpio = camion.split("-")[0] 
     pdf.cell(0, 10, txt=clean_text(f"Vehiculo: {nombre_camion_limpio}"), ln=1)
     pdf.cell(0, 10, txt=clean_text(f"Accesos: {accesos_txt}"), ln=1)
+    # Aquí agregamos el método de pago seleccionado al PDF
+    pdf.cell(0, 10, txt=clean_text(f"Metodo de Pago Preferido: {pago_seleccionado}"), ln=1)
     
     if len(inventario_txt) > 5:
         pdf.ln(5)
@@ -60,7 +60,7 @@ def generar_pdf(fecha, camion, personal, materiales, accesos_txt, inventario_txt
         pdf.multi_cell(0, 6, txt=clean_text(inventario_txt))
         pdf.ln(5)
         
-    # Tabla de Valores
+    # Tabla
     pdf.set_font("Arial", 'B', 12)
     pdf.cell(140, 10, clean_text("Descripcion"), 1)
     pdf.cell(50, 10, clean_text("Valor"), 1, 1, 'C')
@@ -68,16 +68,12 @@ def generar_pdf(fecha, camion, personal, materiales, accesos_txt, inventario_txt
     pdf.set_font("Arial", size=12)
     pdf.cell(140, 10, clean_text(f"Transporte Base ({nombre_camion_limpio})"), 1)
     pdf.cell(50, 10, f"${desglose['camion']:.2f}", 1, 1, 'R')
-    
     pdf.cell(140, 10, clean_text(f"Personal ({personal} ayudantes)"), 1)
     pdf.cell(50, 10, f"${desglose['personal']:.2f}", 1, 1, 'R')
-    
     pdf.cell(140, 10, clean_text("Recargo Pisos/Escaleras"), 1)
     pdf.cell(50, 10, f"${desglose['pisos']:.2f}", 1, 1, 'R')
-    
     pdf.cell(140, 10, clean_text(f"Materiales ({materiales})"), 1)
     pdf.cell(50, 10, f"${desglose['materiales']:.2f}", 1, 1, 'R')
-    
     pdf.cell(140, 10, clean_text("Tarifa Ciudad"), 1)
     pdf.cell(50, 10, "$0.00", 1, 1, 'R')
     
@@ -86,30 +82,18 @@ def generar_pdf(fecha, camion, personal, materiales, accesos_txt, inventario_txt
     pdf.cell(140, 15, clean_text("TOTAL ESTIMADO"), 1)
     pdf.cell(50, 15, f"${total:.2f}", 1, 1, 'R')
     
-    # Métodos de Pago en el PDF
-    pdf.ln(10)
-    pdf.set_font("Arial", 'B', 10)
-    pdf.set_text_color(0, 0, 0)
-    pdf.cell(0, 10, clean_text("FORMAS DE PAGO ACEPTADAS:"), 0, 1, 'L')
-    pdf.set_font("Arial", '', 10)
-    pdf.cell(0, 6, clean_text("- Efectivo"), 0, 1, 'L')
-    pdf.cell(0, 6, clean_text("- Transferencia Bancaria (Pichincha / Guayaquil)"), 0, 1, 'L')
-    pdf.cell(0, 6, clean_text("- Deuna!"), 0, 1, 'L')
-    
-    return pdf.output(dest='S').encode('latin-1', 'ignore') # 'ignore' evita que explote si queda algún caracter raro
+    return pdf.output(dest='S').encode('latin-1', 'ignore')
 
-# --- CSS BLINDADO ---
+# --- CSS BLINDADO (SOLUCIÓN CAJAS NEGRAS Y RADIO BUTTONS) ---
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
     .stApp {{ background-color: {FONDO_APP}; font-family: 'Montserrat', sans-serif; }}
     h1, h2, h3, h4, h5, p, span, div, label, li {{ color: {COLOR_TEXTO} !important; }}
     
-    /* SOLUCIÓN CAJAS NEGRAS */
+    /* INPUTS BLANCOS */
     div[data-baseweb="input"], div[data-baseweb="base-input"], div[data-baseweb="select"] {{
-        background-color: white !important;
-        border: 1px solid #ccc !important;
-        color: black !important;
+        background-color: white !important; border: 1px solid #ccc !important; color: black !important;
     }}
     .stNumberInput input {{ background-color: white !important; color: black !important; }}
     input {{ color: black !important; caret-color: black !important; }}
@@ -119,7 +103,16 @@ st.markdown(f"""
     li[role="option"] {{ background-color: white !important; color: black !important; }}
     li[role="option"]:hover {{ background-color: {COLOR_AMARILLO} !important; color: black !important; }}
     
-    /* ESTILO TIPs Y RESEÑAS */
+    /* RADIO BUTTONS (SELECTOR DE PAGO) */
+    div[role="radiogroup"] label {{
+        background-color: white !important;
+        border: 1px solid #ddd;
+        padding: 10px;
+        border-radius: 8px;
+        margin-right: 10px;
+    }}
+    
+    /* TIPS Y RESEÑAS */
     .tip-box {{ padding: 10px; border-bottom: 1px solid #eee; font-size: 14px; }}
     .review-card {{ background-color: white; padding: 15px; border-radius: 10px; margin-bottom: 10px; border-left: 4px solid {COLOR_AMARILLO}; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }}
     
@@ -144,7 +137,7 @@ st.markdown(f"""
     .bg-purple {{ background-color: #F3E5F5; }}
     .action-text {{ font-size: 13px; font-weight: 700; color: #374151; }}
     
-    .stDownloadButton > button {{ background-color: white !important; color: {COLOR_MORADO} !important; border: 1px solid {COLOR_MORADO} !important; border-radius: 8px !important; padding: 5px 15px !important; }}
+    .stDownloadButton > button {{ background-color: white !important; color: {COLOR_MORADO} !important; border: 1px solid {COLOR_MORADO} !important; border-radius: 8px !important; padding: 5px 15px !important; width: 100%; }}
     .stDownloadButton > button:hover {{ background-color: {COLOR_MORADO} !important; color: white !important; }}
 
     header {{ visibility: hidden; }} footer {{ visibility: hidden; }}
@@ -301,48 +294,7 @@ with k3:
 
 st.write("")
 
-# --- ACCIONES RÁPIDAS ---
-ac1, ac2 = st.columns(2)
-msg = f"""Hola Mudanza Prime. Solicito Reserva:
-🚚 Vehículo: {seleccion}
-📅 Fecha: {fecha_str}
-🏗️ Accesos: {accesos_txt}
-👷 Personal: {personal} ayudantes
-📦 Items: {inventario_final}
-💰 Total Estimado: ${total:.2f}
-
-Quedo a la espera de su confirmación."""
-lnk = f"https://wa.me/{NUMERO_WHATSAPP}?text={urllib.parse.quote(msg)}"
-def btn(i, t, c, l="#"): return f"""<a href="{l}" target="_blank" style="text-decoration:none;"><div class="action-btn"><div class="icon-box {c}">{i}</div><div class="action-text">{t}</div></div></a>"""
-
-with ac1: 
-    st.markdown(btn("📲", "CONFIRMAR RESERVA (WhatsApp)", "bg-green", lnk), unsafe_allow_html=True)
-    st.markdown("""<div class="success-box">✅ Envía los datos directamente a nuestro sistema.</div>""", unsafe_allow_html=True)
-with ac2: 
-    col_pdf1, col_pdf2 = st.columns([1, 4])
-    with col_pdf1: st.markdown("""<div style="font-size:30px; text-align:center;">📄</div>""", unsafe_allow_html=True)
-    with col_pdf2:
-         pdf_bytes = generar_pdf(
-            fecha=fecha_str,
-            camion=seleccion,
-            personal=personal,
-            materiales=f"{cajas} cajas, {rollos} rollos",
-            accesos_txt=accesos_txt,
-            inventario_txt=inventario_final,
-            total=total,
-            desglose={'camion': precio_camion, 'personal': precio_personal, 'materiales': precio_materiales, 'pisos': precio_pisos}
-        )
-         st.download_button(
-            label="Descargar Cotización (PDF)",
-            data=pdf_bytes,
-            file_name="Cotizacion_Mudanza.pdf",
-            mime="application/pdf",
-            use_container_width=True
-        )
-
-st.write("")
-
-# --- DESGLOSE + TIPS + RESEÑAS ---
+# --- DESGLOSE + TIPS ---
 c_desglose, c_extra = st.columns([3, 2])
 
 with c_desglose:
@@ -365,10 +317,6 @@ with c_desglose:
         <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee;">
             <span style="color:#666;">📍 Cobertura Ciudad</span><span style="font-weight:bold; color:#2E7D32;">Incluida</span>
         </div>
-        <div style="border-top: 1px solid #eee; margin-top:10px; padding-top:10px;">
-            <span style="font-weight:bold; color:{COLOR_TEXTO};">💳 Métodos de Pago:</span><br>
-            <span style="font-size:14px; color:#666;">💵 Efectivo | 🏦 Transferencia | 📱 Deuna!</span>
-        </div>
         <div style="display:flex; justify-content:space-between; padding:15px 0; margin-top:10px;">
             <span style="font-weight:bold; font-size:18px; color:{COLOR_MORADO};">TOTAL FINAL</span>
             <span style="font-weight:bold; font-size:18px; color:{COLOR_MORADO};">${total:.2f}</span>
@@ -376,8 +324,51 @@ with c_desglose:
     </div>
     """
     st.markdown(html_desglose, unsafe_allow_html=True)
+    
+    # --- AQUÍ ESTÁ EL SELECTOR DE PAGO NUEVO ---
+    st.write("---")
+    st.markdown("#### 💳 Forma de Pago Preferida:")
+    metodo_pago = st.radio("Selecciona una opción:", ["💵 Efectivo", "🏦 Transferencia (Pichincha/Guayaquil)", "📱 Deuna!"], horizontal=False, label_visibility="collapsed")
+    
+    # BOTÓN DESCARGA PDF (AHORA ESTÁ AQUÍ ABAJO)
+    pdf_bytes = generar_pdf(
+        fecha=fecha_str,
+        camion=seleccion,
+        personal=personal,
+        materiales=f"{cajas} cajas, {rollos} rollos",
+        accesos_txt=accesos_txt,
+        inventario_txt=inventario_final,
+        total=total,
+        pago_seleccionado=metodo_pago,
+        desglose={'camion': precio_camion, 'personal': precio_personal, 'materiales': precio_materiales, 'pisos': precio_pisos}
+    )
+    st.download_button(
+        label="📄 Descargar Cotización (PDF)",
+        data=pdf_bytes,
+        file_name="Cotizacion_Mudanza.pdf",
+        mime="application/pdf",
+        use_container_width=True
+    )
 
 with c_extra:
+    # ACCIÓN PRINCIPAL: WHATSAPP (AHORA INCLUYE EL PAGO)
+    msg = f"""Hola Mudanza Prime. Solicito Reserva:
+🚚 Vehículo: {seleccion}
+📅 Fecha: {fecha_str}
+🏗️ Accesos: {accesos_txt}
+👷 Personal: {personal} ayudantes
+📦 Items: {inventario_final}
+💰 Total: ${total:.2f}
+💳 Pago: {metodo_pago}
+
+Quedo a la espera de su confirmación."""
+    lnk = f"https://wa.me/{NUMERO_WHATSAPP}?text={urllib.parse.quote(msg)}"
+    
+    st.markdown(f"""<a href="{lnk}" target="_blank" style="text-decoration:none;"><div class="action-btn" style="background-color:#E8F5E9; border-color:#4CAF50;"><div class="icon-box bg-green">📲</div><div class="action-text">CONFIRMAR RESERVA (WhatsApp)</div></div></a>""", unsafe_allow_html=True)
+    st.markdown("""<div class="success-box">✅ Envía los datos directamente a nuestro sistema.</div>""", unsafe_allow_html=True)
+
+    st.write("")
+    
     # SECCIÓN TIPS
     with st.expander("💡 10 Tips de Mudanza", expanded=False):
         st.markdown("""
