@@ -78,7 +78,7 @@ def generar_pdf(fecha, camion, personal, materiales, accesos_txt, inventario_txt
     pdf.cell(50, 15, f"${total:.2f}", 1, 1, 'R')
     return pdf.output(dest='S').encode('latin-1')
 
-# --- CSS BLINDADO (NO TOCAR - EVITA PANTALLAS NEGRAS) ---
+# --- CSS BLINDADO ---
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
@@ -147,15 +147,16 @@ with col_titulo:
 st.markdown(f"<div class='control-panel'>", unsafe_allow_html=True)
 st.markdown("### ⚙️ Configura tu Servicio")
 
-c1, c2, c3, c4 = st.columns(4) # AÑADÍ UNA COLUMNA PARA MATERIALES
+c1, c2, c3, c4 = st.columns(4) 
 with c1:
     st.markdown("**1. Fecha y Vehículo**")
     fecha_seleccionada = st.date_input("📅 Fecha", datetime.date.today())
+    # ACTUALIZACIÓN: Precios visibles en la lista
     vehiculos = {
-        "Furgoneta (Pequeña)": {"precio": 30, "img": "🚐"},
-        "Camión 2 Toneladas": {"precio": 40, "img": "🚛"},
-        "Camión 3.5 Toneladas": {"precio": 50, "img": "🚚"},
-        "Camión 6 Toneladas": {"precio": 60, "img": "🚛🚛"}
+        "Furgoneta (Pequeña) - $30": {"precio": 30, "img": "🚐"},
+        "Camión 2 Toneladas - $40": {"precio": 40, "img": "🚛"},
+        "Camión 3.5 Toneladas - $50": {"precio": 50, "img": "🚚"},
+        "Camión 6 Toneladas - $60": {"precio": 60, "img": "🚛🚛"}
     }
     seleccion = st.selectbox("🚛 Camión", list(vehiculos.keys()))
     dato_camion = vehiculos[seleccion]
@@ -165,11 +166,9 @@ with c2:
     personal = st.slider("👷 Ayudantes", 0, 10, 2)
     st.caption("Tarifa: $15 c/u")
 
-# --- NUEVA LÓGICA DE PISOS ---
 with c3:
     st.markdown("**3. Pisos / Accesos**")
     st.caption("Escaleras: $10 extra cada 2 pisos")
-    
     col_salida, col_llegada = st.columns(2)
     with col_salida:
         piso_salida = st.selectbox("Salida", ["PB", "1", "2", "3", "4", "5+"], key="piso_sal")
@@ -180,8 +179,9 @@ with c3:
 
 with c4:
     st.markdown("**4. Materiales**")
-    cajas = st.number_input("📦 Cajas", 0, 100, 10)
-    rollos = st.number_input("🗞️ Rollos", 0, 20, 1)
+    # ACTUALIZACIÓN: Precios visibles en la etiqueta
+    cajas = st.number_input("📦 Cajas ($1.50 c/u)", 0, 100, 10)
+    rollos = st.number_input("🗞️ Rollos ($20.00 c/u)", 0, 20, 1)
 
 st.markdown("</div>", unsafe_allow_html=True)
 
@@ -228,15 +228,11 @@ with st.expander("📝 LISTA DE INVENTARIO (Clic para desplegar)", expanded=Fals
 
 inventario_final = ", ".join(lista_objetos) if lista_objetos else "No especificado"
 
-# --- CÁLCULOS (INCLUYENDO PISOS) ---
-# Lógica: Cada 2 pisos = $10. (PB y 1 no cobran. 2 y 3 cobran $10. 4 y 5 cobran $20).
+# --- CÁLCULOS ---
 def calcular_recargo_piso(piso, ascensor):
-    if ascensor or piso in ["PB", "1"]:
-        return 0
-    if piso in ["2", "3"]:
-        return 10
-    if piso in ["4", "5+"]:
-        return 20
+    if ascensor or piso in ["PB", "1"]: return 0
+    if piso in ["2", "3"]: return 10
+    if piso in ["4", "5+"]: return 20
     return 0
 
 recargo_salida = calcular_recargo_piso(piso_salida, asc_salida)
@@ -248,7 +244,7 @@ precio_personal = personal * 15
 precio_materiales = (cajas * 1.5) + (rollos * 20)
 total = precio_camion + precio_personal + precio_materiales + precio_pisos
 
-# Texto de accesos para WhatsApp y PDF
+# Texto de accesos
 txt_salida = f"{piso_salida} ({'Ascensor' if asc_salida else 'Escaleras'})"
 txt_llegada = f"{piso_llegada} ({'Ascensor' if asc_llegada else 'Escaleras'})"
 accesos_txt = f"De: {txt_salida} -> A: {txt_llegada}"
@@ -276,10 +272,8 @@ with k3:
 
 st.write("")
 
-# --- ACCIONES RÁPIDAS (WHATSAPP CONECTADO) ---
+# --- ACCIONES RÁPIDAS ---
 ac1, ac2, ac3 = st.columns(3)
-
-# MENSAJE COMPLETO PARA WHATSAPP
 msg = f"""Hola Mudanza Prime. Solicito Reserva:
 🚚 Vehículo: {seleccion}
 📅 Fecha: {fecha_str}
@@ -291,13 +285,11 @@ msg = f"""Hola Mudanza Prime. Solicito Reserva:
 Quedo a la espera de su confirmación."""
 
 lnk = f"https://wa.me/{NUMERO_WHATSAPP}?text={urllib.parse.quote(msg)}"
-
 def btn(i, t, c, l="#"): return f"""<a href="{l}" target="_blank" style="text-decoration:none;"><div class="action-btn"><div class="icon-box {c}">{i}</div><div class="action-text">{t}</div></div></a>"""
 
 with ac1: 
     st.markdown(btn("📲", "Reservar WhatsApp", "bg-green", lnk), unsafe_allow_html=True)
     st.markdown("""<div class="success-box">✅ Envía los datos directamente a nuestro sistema.</div>""", unsafe_allow_html=True)
-
 with ac2: st.markdown(btn("🛡️", "Seguros y Tips", "bg-purple"), unsafe_allow_html=True)
 with ac3: st.markdown(btn("⭐", "Calificanos", "bg-blue"), unsafe_allow_html=True)
 
@@ -318,9 +310,6 @@ html_desglose = f"""
     </div>
     <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee;">
         <span style="color:#666;">📦 Materiales</span><span style="font-weight:bold; color:{COLOR_TEXTO};">${precio_materiales:.2f}</span>
-    </div>
-    <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee;">
-        <span style="color:#666;">📍 Cobertura Ciudad</span><span style="font-weight:bold; color:#2E7D32;">Incluida</span>
     </div>
     <div style="display:flex; justify-content:space-between; padding:15px 0; margin-top:10px;">
         <span style="font-weight:bold; font-size:18px; color:{COLOR_MORADO};">TOTAL FINAL</span>
