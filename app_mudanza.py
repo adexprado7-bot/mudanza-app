@@ -1,7 +1,7 @@
 import streamlit as st
 import datetime
 import urllib.parse
-from fpdf import FPDF # <--- NECESITAS INSTALAR ESTO: pip install fpdf
+from fpdf import FPDF
 
 # --- CONFIGURACIÓN ---
 st.set_page_config(page_title="Mudanza Prime | Panel", page_icon="🚚", layout="wide")
@@ -17,10 +17,9 @@ COLOR_INPUT_BG = "#FFFFFF"
 # --- FUNCIÓN GENERADORA DE PDF ---
 class PDF(FPDF):
     def header(self):
-        # Logo (si no tienes archivo logo.jpg, comenta la linea de abajo)
         # self.image('logo.jpg', 10, 8, 33) 
         self.set_font('Arial', 'B', 20)
-        self.set_text_color(46, 0, 78) # Morado
+        self.set_text_color(46, 0, 78) 
         self.cell(0, 10, 'MUDANZA PRIME', 0, 1, 'C')
         self.set_font('Arial', 'I', 10)
         self.cell(0, 5, 'Presupuesto de Servicios Logísticos', 0, 1, 'C')
@@ -32,21 +31,18 @@ class PDF(FPDF):
         self.set_text_color(128)
         self.cell(0, 10, 'Mudanza Prime - Guayaquil, Ecuador | Documento no válido como factura tributaria', 0, 0, 'C')
 
-def generar_pdf(cliente, fecha, camion, personal, materiales, total):
+def generar_pdf(fecha, camion, personal, materiales, total, desglose):
     pdf = PDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
     
-    # Información del Cliente
+    # Información
     pdf.set_fill_color(240, 240, 240)
     pdf.cell(0, 10, txt=f"Fecha de Emisión: {datetime.date.today()}", ln=1, fill=True)
     pdf.ln(5)
-    
-    # Detalles del Servicio
     pdf.set_text_color(0, 0, 0)
     pdf.cell(0, 10, txt=f"Fecha Programada: {fecha}", ln=1)
     pdf.cell(0, 10, txt=f"Vehículo Solicitado: {camion}", ln=1)
-    
     pdf.ln(10)
     
     # Tabla de Costos
@@ -56,26 +52,26 @@ def generar_pdf(cliente, fecha, camion, personal, materiales, total):
     
     pdf.set_font("Arial", size=12)
     pdf.cell(140, 10, f"Servicio de Transporte ({camion})", 1)
-    pdf.cell(50, 10, f"${camion_precio:.2f}", 1, 1, 'R')
+    pdf.cell(50, 10, f"${desglose['camion']:.2f}", 1, 1, 'R')
     
     pdf.cell(140, 10, f"Personal de Carga ({personal} personas)", 1)
-    pdf.cell(50, 10, f"${personal_precio:.2f}", 1, 1, 'R')
+    pdf.cell(50, 10, f"${desglose['personal']:.2f}", 1, 1, 'R')
     
     pdf.cell(140, 10, f"Materiales ({materiales})", 1)
-    pdf.cell(50, 10, f"${materiales_precio:.2f}", 1, 1, 'R')
+    pdf.cell(50, 10, f"${desglose['materiales']:.2f}", 1, 1, 'R')
     
     pdf.cell(140, 10, "Tarifa Plana (Distancia incluida)", 1)
     pdf.cell(50, 10, "$0.00", 1, 1, 'R')
     
     # Total
     pdf.set_font("Arial", 'B', 14)
-    pdf.set_text_color(46, 0, 78) # Morado
+    pdf.set_text_color(46, 0, 78)
     pdf.cell(140, 15, "TOTAL A PAGAR", 1)
     pdf.cell(50, 15, f"${total:.2f}", 1, 1, 'R')
     
     return pdf.output(dest='S').encode('latin-1')
 
-# --- CSS (ESTILO BANCO PURO) ---
+# --- CSS BLINDADO (ESTILO BANCO + SOLUCIÓN FANTASMAS) ---
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
@@ -83,20 +79,40 @@ st.markdown(f"""
     .stApp {{ background-color: {FONDO_APP}; font-family: 'Montserrat', sans-serif; }}
     h1, h2, h3, h4, p, span, div, label {{ color: {COLOR_TEXTO} !important; }}
     
-    /* SOLUCIÓN FANTASMAS (INPUTS BLANCOS SIEMPRE) */
-    .stSelectbox div[data-baseweb="select"] > div, 
-    .stDateInput div[data-baseweb="input"] > div,
-    .stNumberInput div[data-baseweb="input"] > div {{
-        background-color: white !important; color: black !important; border: 1px solid #ddd !important;
+    /* --- SOLUCIÓN DEFINITIVA PARA LETRAS FANTASMA --- */
+    /* Fuerza el color del texto y fondo de los inputs y selectores */
+    .stSelectbox > div > div, 
+    .stDateInput > div > div,
+    .stNumberInput > div > div {{
+        background-color: white !important;
+        color: black !important;
+        border-color: #E5E7EB !important;
     }}
-    input {{ color: black !important; }}
-    ul[data-testid="stSelectboxVirtualDropdown"] {{ background-color: white !important; }}
-    li[role="option"] {{ color: black !important; background-color: white !important; }}
-    li[role="option"]:hover {{ background-color: {COLOR_AMARILLO} !important; color: {COLOR_MORADO} !important; }}
-    div[data-baseweb="calendar"] {{ background-color: white !important; }}
-    div[data-baseweb="calendar"] div {{ color: black !important; }}
-    button[data-baseweb="day"] {{ color: black !important; }}
-    
+    /* Color del texto dentro del input */
+    input[type="text"], input[type="number"] {{
+        color: black !important;
+    }}
+    /* Estilo de la lista desplegable */
+    ul[data-testid="stSelectboxVirtualDropdown"] {{
+        background-color: white !important;
+        border: 1px solid #E5E7EB !important;
+    }}
+    /* Estilo de las opciones de la lista */
+    li[role="option"] {{
+        color: black !important;
+        background-color: white !important;
+    }}
+    /* Estilo al pasar el mouse por una opción */
+    li[role="option"]:hover, li[role="option"][aria-selected="true"] {{
+        background-color: {COLOR_AMARILLO} !important;
+        color: black !important;
+    }}
+    /* Estilo del calendario */
+    div[data-baseweb="calendar"] {{
+        background-color: white !important;
+    }}
+    /* --- FIN SOLUCIÓN FANTASMAS --- */
+
     /* PANELES */
     .control-panel {{
         background-color: {COLOR_CARD_BG}; padding: 20px; border-radius: 15px;
@@ -120,12 +136,13 @@ st.markdown(f"""
     .card-label {{ font-size: 12px; font-weight: 700; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; }}
     .card-amount {{ font-size: 32px; font-weight: 800; margin-top: 5px; }}
 
-    /* BOTONES */
+    /* BOTONES DE ACCIÓN */
     .action-btn {{
         background-color: {COLOR_CARD_BG}; border-radius: 16px; padding: 15px; text-align: center;
         box-shadow: 0 4px 6px rgba(0,0,0,0.02); cursor: pointer; transition: all 0.2s; height: 100%;
         display: flex; flex-direction: column; align-items: center; justify-content: center;
         border: 1px solid rgba(0,0,0,0.05);
+        text-decoration: none;
     }}
     .action-btn:hover {{ transform: scale(1.03); border-color: {COLOR_AMARILLO}; }}
     
@@ -138,6 +155,21 @@ st.markdown(f"""
     .bg-yellow {{ background-color: #FFF8E1; }}
     .bg-purple {{ background-color: #F3E5F5; }}
     .action-text {{ font-size: 13px; font-weight: 700; color: #374151; }}
+
+    /* ESTILO BOTÓN DE DESCARGA STREAMLIT */
+    .stDownloadButton > button {{
+        background-color: {COLOR_MORADO} !important;
+        color: white !important;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+        padding: 8px 16px !important;
+        border: none !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+        transition: background-color 0.2s !important;
+    }}
+    .stDownloadButton > button:hover {{
+        background-color: #4a148c !important;
+    }}
 
     header {{ visibility: hidden; }}
     footer {{ visibility: hidden; }}
@@ -213,48 +245,23 @@ with c3:
 
 st.write("")
 
-# --- ACCIONES RÁPIDAS (CON BOTÓN PDF) ---
-ca, cb, cc, cd = st.columns(4)
+# --- ACCIONES RÁPIDAS (SIN BOTÓN PDF GRANDE) ---
+ca, cb, cc = st.columns(3) # Ahora son 3 columnas en vez de 4
 msg = f"Hola Mudanza Prime. Quiero reservar: {seleccion} para el {fecha_str}. Total: ${total:.2f} (Tarifa Fija Ciudad)"
 lnk = f"https://wa.me/593999999999?text={urllib.parse.quote(msg)}"
 
 def btn(i, t, c, l="#"): 
     return f"""<a href="{l}" target="_blank" style="text-decoration:none;"><div class="action-btn"><div class="icon-box {c}">{i}</div><div class="action-text">{t}</div></div></a>"""
 
-# Generamos el PDF en memoria
-pdf_bytes = generar_pdf(
-    cliente="Cliente Prime",
-    fecha=fecha_str,
-    camion=seleccion,
-    personal=personal,
-    materiales=f"{cajas} cajas, {rollos} rollos",
-    total=total
-)
-
-with ca: 
-    # Botón WhatsApp
-    st.markdown(btn("📲", "Reservar WhatsApp", "bg-green", lnk), unsafe_allow_html=True)
-
-with cb:
-    # BOTÓN DE DESCARGA PDF NATIVO DE STREAMLIT
-    # Usamos un contenedor vacío para estilizarlo, pero el botón funcional es el de Streamlit
-    st.markdown("""<div class="action-btn" style="padding: 10px;"><div class="icon-box bg-purple" style="margin-bottom:0;">📄</div></div>""", unsafe_allow_html=True)
-    st.download_button(
-        label="Descargar Factura",
-        data=pdf_bytes,
-        file_name=f"Presupuesto_MudanzaPrime_{fecha_str}.pdf",
-        mime="application/pdf",
-        use_container_width=True
-    )
-
-with cc: st.markdown(btn("📦", "Ver Inventario", "bg-yellow"), unsafe_allow_html=True)
-with cd: st.markdown(btn("⭐", "Calificanos", "bg-blue"), unsafe_allow_html=True)
+with ca: st.markdown(btn("📲", "Reservar WhatsApp", "bg-green", lnk), unsafe_allow_html=True)
+with cb: st.markdown(btn("📦", "Ver Inventario", "bg-yellow"), unsafe_allow_html=True)
+with cc: st.markdown(btn("⭐", "Calificanos", "bg-blue"), unsafe_allow_html=True)
 
 st.write("")
 
-# DESGLOSE
+# --- DESGLOSE DE FACTURA ---
 html_desglose = f"""
-<div style="background-color:{COLOR_CARD_BG}; padding:20px; border-radius:15px; box-shadow:0 4px 6px rgba(0,0,0,0.02);">
+<div style="background-color:{COLOR_CARD_BG}; padding:20px; border-radius:15px; box-shadow:0 4px 6px rgba(0,0,0,0.02); margin-bottom: 20px;">
     <h4 style="margin-bottom:20px; color:{COLOR_TEXTO};">🧾 Desglose de Servicios</h4>
     <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee;">
         <span style="color:#666;">🚛 {seleccion} (Base)</span>
@@ -279,3 +286,26 @@ html_desglose = f"""
 </div>
 """
 st.markdown(html_desglose, unsafe_allow_html=True)
+
+# --- BOTÓN DE DESCARGA PDF (PEQUEÑO Y SOFISTICADO) ---
+# Usamos columnas para alinearlo a la derecha
+col_space, col_btn = st.columns([3, 1])
+
+with col_btn:
+    # Generamos el PDF
+    pdf_bytes = generar_pdf(
+        fecha=fecha_str,
+        camion=seleccion,
+        personal=personal,
+        materiales=f"{cajas} cajas, {rollos} rollos",
+        total=total,
+        desglose={'camion': camion_precio, 'personal': personal_precio, 'materiales': materiales_precio}
+    )
+    # Botón nativo de Streamlit, estilizado con CSS
+    st.download_button(
+        label="📄 Descargar Presupuesto (PDF)",
+        data=pdf_bytes,
+        file_name=f"Presupuesto_MudanzaPrime_{fecha_str}.pdf",
+        mime="application/pdf",
+        use_container_width=True
+    )
