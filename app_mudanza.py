@@ -4,6 +4,7 @@ import urllib.parse
 from fpdf import FPDF
 
 # --- CONFIGURACIÓN DE PÁGINA ---
+# Mantenemos el título en la pestaña del navegador, pero no en la app visible
 st.set_page_config(page_title="Mudanza Prime | Cotizador", page_icon="🚚", layout="wide")
 
 # --- COLORES ---
@@ -18,7 +19,7 @@ NUMERO_WHATSAPP = "593998994518"
 def clean_text(text):
     return text.encode('latin-1', 'ignore').decode('latin-1')
 
-# --- CLASE PDF ---
+# --- CLASE PDF (El nombre sigue aquí para el documento oficial) ---
 class PDF(FPDF):
     def header(self):
         self.set_font('Arial', 'B', 20)
@@ -37,21 +38,15 @@ def generar_pdf(fecha, camion, personal, materiales, accesos_txt, inventario_txt
     pdf = PDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
-    
-    # Fecha
     pdf.set_fill_color(240, 240, 240)
     pdf.cell(0, 10, txt=clean_text(f"Fecha Emision: {datetime.date.today()}"), ln=1, fill=True)
     pdf.ln(5)
-    
-    # Datos
     pdf.set_text_color(0, 0, 0)
     pdf.cell(0, 10, txt=clean_text(f"Fecha Solicitada: {fecha}"), ln=1)
     nombre_camion_limpio = camion.split("-")[0] 
     pdf.cell(0, 10, txt=clean_text(f"Vehiculo: {nombre_camion_limpio}"), ln=1)
     pdf.cell(0, 10, txt=clean_text(f"Accesos: {accesos_txt}"), ln=1)
-    # Aquí agregamos el método de pago seleccionado al PDF
     pdf.cell(0, 10, txt=clean_text(f"Metodo de Pago Preferido: {pago_seleccionado}"), ln=1)
-    
     if len(inventario_txt) > 5:
         pdf.ln(5)
         pdf.set_font("Arial", 'B', 10)
@@ -59,12 +54,9 @@ def generar_pdf(fecha, camion, personal, materiales, accesos_txt, inventario_txt
         pdf.set_font("Arial", size=9)
         pdf.multi_cell(0, 6, txt=clean_text(inventario_txt))
         pdf.ln(5)
-        
-    # Tabla
     pdf.set_font("Arial", 'B', 12)
     pdf.cell(140, 10, clean_text("Descripcion"), 1)
     pdf.cell(50, 10, clean_text("Valor"), 1, 1, 'C')
-    
     pdf.set_font("Arial", size=12)
     pdf.cell(140, 10, clean_text(f"Transporte Base ({nombre_camion_limpio})"), 1)
     pdf.cell(50, 10, f"${desglose['camion']:.2f}", 1, 1, 'R')
@@ -76,48 +68,35 @@ def generar_pdf(fecha, camion, personal, materiales, accesos_txt, inventario_txt
     pdf.cell(50, 10, f"${desglose['materiales']:.2f}", 1, 1, 'R')
     pdf.cell(140, 10, clean_text("Tarifa Ciudad"), 1)
     pdf.cell(50, 10, "$0.00", 1, 1, 'R')
-    
     pdf.set_font("Arial", 'B', 14)
     pdf.set_text_color(46, 0, 78)
     pdf.cell(140, 15, clean_text("TOTAL ESTIMADO"), 1)
     pdf.cell(50, 15, f"${total:.2f}", 1, 1, 'R')
-    
     return pdf.output(dest='S').encode('latin-1', 'ignore')
 
-# --- CSS BLINDADO (SOLUCIÓN CAJAS NEGRAS Y RADIO BUTTONS) ---
+# --- CSS BLINDADO ---
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
     .stApp {{ background-color: {FONDO_APP}; font-family: 'Montserrat', sans-serif; }}
     h1, h2, h3, h4, h5, p, span, div, label, li {{ color: {COLOR_TEXTO} !important; }}
     
-    /* INPUTS BLANCOS */
     div[data-baseweb="input"], div[data-baseweb="base-input"], div[data-baseweb="select"] {{
         background-color: white !important; border: 1px solid #ccc !important; color: black !important;
     }}
     .stNumberInput input {{ background-color: white !important; color: black !important; }}
     input {{ color: black !important; caret-color: black !important; }}
     
-    /* DROPDOWNS */
     ul[data-testid="stSelectboxVirtualDropdown"] {{ background-color: white !important; }}
     li[role="option"] {{ background-color: white !important; color: black !important; }}
     li[role="option"]:hover {{ background-color: {COLOR_AMARILLO} !important; color: black !important; }}
     
-    /* RADIO BUTTONS (SELECTOR DE PAGO) */
-    div[role="radiogroup"] label {{
-        background-color: white !important;
-        border: 1px solid #ddd;
-        padding: 10px;
-        border-radius: 8px;
-        margin-right: 10px;
-    }}
+    div[role="radiogroup"] label {{ background-color: white !important; border: 1px solid #ddd; padding: 10px; border-radius: 8px; margin-right: 10px; }}
     
-    /* TIPS Y RESEÑAS */
     .tip-box {{ padding: 10px; border-bottom: 1px solid #eee; font-size: 14px; }}
     .review-card {{ background-color: white; padding: 15px; border-radius: 10px; margin-bottom: 10px; border-left: 4px solid {COLOR_AMARILLO}; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }}
     
     .control-panel {{ background-color: {COLOR_CARD_BG}; padding: 20px; border-radius: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; }}
-    .slogan-box {{ background-color: white; padding: 10px 20px; border-radius: 10px; border-left: 5px solid {COLOR_MORADO}; font-style: italic; color: #555 !important; margin-top: 5px; }}
     
     .hero-card {{ border-radius: 20px; padding: 25px; color: white; height: 160px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 10px 25px rgba(0,0,0,0.08); transition: transform 0.2s; }}
     .hero-card:hover {{ transform: translateY(-5px); }}
@@ -144,14 +123,18 @@ st.markdown(f"""
     </style>
 """, unsafe_allow_html=True)
 
-# --- CABECERA ---
-col_logo, col_titulo = st.columns([1, 6])
-with col_logo:
-    try: st.image("logo.jpg", width=110)
-    except: st.markdown("# 🚚")
-with col_titulo:
-    st.markdown(f"<h1 style='margin-bottom:0; color:{COLOR_MORADO} !important;'>MUDANZA PRIME</h1>", unsafe_allow_html=True)
-    st.markdown(f"""<div class="slogan-box">"Movemos lo que más quieres."</div>""", unsafe_allow_html=True)
+# --- CABECERA CLEAN (SOLO LOGO CENTRADO) ---
+# Usamos columnas para centrar el logo. Ajusta los números [3, 4, 3] si quieres el logo más grande o más chico.
+c_spacer_left, c_logo_center, c_spacer_right = st.columns([3, 4, 3])
+
+with c_logo_center:
+    # Muestra el logo centrado y un poco más grande. Si falla, muestra un emoji gigante.
+    try: 
+        st.image("logo.jpg", use_container_width=True)
+    except: 
+        st.markdown("<h1 style='text-align: center; font-size: 80px;'>🚚</h1>", unsafe_allow_html=True)
+
+st.write("") # Un poco de espacio antes del panel
 
 # --- PANEL DE CONFIGURACIÓN ---
 st.markdown(f"<div class='control-panel'>", unsafe_allow_html=True)
@@ -298,7 +281,6 @@ st.write("")
 c_desglose, c_extra = st.columns([3, 2])
 
 with c_desglose:
-    # DESGLOSE HTML
     html_desglose = f"""
     <div style="background-color:{COLOR_CARD_BG}; padding:20px; border-radius:15px; box-shadow:0 4px 6px rgba(0,0,0,0.02); margin-bottom: 20px;">
         <h4 style="margin-bottom:20px; color:{COLOR_TEXTO};">🧾 Desglose de Servicios</h4>
@@ -325,12 +307,10 @@ with c_desglose:
     """
     st.markdown(html_desglose, unsafe_allow_html=True)
     
-    # --- AQUÍ ESTÁ EL SELECTOR DE PAGO NUEVO ---
     st.write("---")
     st.markdown("#### 💳 Forma de Pago Preferida:")
     metodo_pago = st.radio("Selecciona una opción:", ["💵 Efectivo", "🏦 Transferencia (Pichincha/Guayaquil)", "📱 Deuna!"], horizontal=False, label_visibility="collapsed")
     
-    # BOTÓN DESCARGA PDF (AHORA ESTÁ AQUÍ ABAJO)
     pdf_bytes = generar_pdf(
         fecha=fecha_str,
         camion=seleccion,
@@ -351,7 +331,6 @@ with c_desglose:
     )
 
 with c_extra:
-    # ACCIÓN PRINCIPAL: WHATSAPP (AHORA INCLUYE EL PAGO)
     msg = f"""Hola Mudanza Prime. Solicito Reserva:
 🚚 Vehículo: {seleccion}
 📅 Fecha: {fecha_str}
@@ -369,7 +348,6 @@ Quedo a la espera de su confirmación."""
 
     st.write("")
     
-    # SECCIÓN TIPS
     with st.expander("💡 10 Tips de Mudanza", expanded=False):
         st.markdown("""
         <div class="tip-box">1. 📅 Reserva 3 días antes.</div>
@@ -384,7 +362,6 @@ Quedo a la espera de su confirmación."""
         <div class="tip-box">10. 🎒 Prepara maleta de primera noche.</div>
         """, unsafe_allow_html=True)
 
-    # SECCIÓN RESEÑAS
     st.markdown("##### ⭐ Opiniones de Clientes")
     st.markdown("""
     <div class="review-card">
@@ -399,7 +376,6 @@ Quedo a la espera de su confirmación."""
     </div>
     """, unsafe_allow_html=True)
     
-    # INPUT DE CALIFICACIÓN
     st.write("---")
     st.caption("Déjanos tu opinión:")
     calificacion = st.slider("Puntuación", 1, 5, 5)
