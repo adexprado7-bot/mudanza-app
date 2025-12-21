@@ -14,64 +14,89 @@ COLOR_TEXTO = "#1F2937"
 COLOR_CARD_BG = "#FFFFFF"
 NUMERO_WHATSAPP = "593998994518"
 
-# --- FUNCIÓN PDF ---
+# --- FUNCIÓN PARA LIMPIAR TEXTO (ADIÓS ERROR UNICODE) ---
+def clean_text(text):
+    # Esta función elimina emojis y caracteres raros para que el PDF no falle
+    return text.encode('latin-1', 'ignore').decode('latin-1')
+
+# --- CLASE PDF ---
 class PDF(FPDF):
     def header(self):
         self.set_font('Arial', 'B', 20)
         self.set_text_color(46, 0, 78) 
-        self.cell(0, 10, 'MUDANZA PRIME', 0, 1, 'C')
+        self.cell(0, 10, clean_text('MUDANZA PRIME'), 0, 1, 'C')
         self.set_font('Arial', 'I', 10)
-        self.cell(0, 5, 'Detalle de Solicitud de Servicio', 0, 1, 'C')
+        self.cell(0, 5, clean_text('Detalle de Solicitud de Servicio'), 0, 1, 'C')
         self.ln(10)
     def footer(self):
         self.set_y(-15)
         self.set_font('Arial', 'I', 8)
         self.set_text_color(128)
-        self.cell(0, 10, 'Mudanza Prime - Guayaquil | Cotización sujeta a disponibilidad', 0, 0, 'C')
+        self.cell(0, 10, clean_text('Mudanza Prime - Guayaquil | Cotizacion sujeta a disponibilidad'), 0, 0, 'C')
 
 def generar_pdf(fecha, camion, personal, materiales, accesos_txt, inventario_txt, total, desglose):
     pdf = PDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
+    
+    # Fecha Emisión
     pdf.set_fill_color(240, 240, 240)
-    pdf.cell(0, 10, txt=f"Fecha Emisión: {datetime.date.today()}", ln=1, fill=True)
+    pdf.cell(0, 10, txt=clean_text(f"Fecha Emision: {datetime.date.today()}"), ln=1, fill=True)
     pdf.ln(5)
+    
+    # Detalles Generales (Usamos clean_text para quitar emojis)
     pdf.set_text_color(0, 0, 0)
-    pdf.cell(0, 10, txt=f"Fecha Solicitada: {fecha}", ln=1)
-    pdf.cell(0, 10, txt=f"Vehículo: {camion}", ln=1)
-    pdf.cell(0, 10, txt=f"Accesos: {accesos_txt}", ln=1)
+    pdf.cell(0, 10, txt=clean_text(f"Fecha Solicitada: {fecha}"), ln=1)
+    # Quitamos el precio del nombre del camión para el PDF para que se vea limpio
+    nombre_camion_limpio = camion.split("-")[0] 
+    pdf.cell(0, 10, txt=clean_text(f"Vehiculo: {nombre_camion_limpio}"), ln=1)
+    pdf.cell(0, 10, txt=clean_text(f"Accesos: {accesos_txt}"), ln=1)
+    
     if len(inventario_txt) > 5:
         pdf.ln(5)
         pdf.set_font("Arial", 'B', 10)
-        pdf.cell(0, 8, "Inventario Declarado:", ln=1)
+        pdf.cell(0, 8, clean_text("Inventario Declarado:"), ln=1)
         pdf.set_font("Arial", size=9)
-        pdf.multi_cell(0, 6, txt=inventario_txt)
+        pdf.multi_cell(0, 6, txt=clean_text(inventario_txt))
         pdf.ln(5)
+        
+    # Tabla de Valores
     pdf.set_font("Arial", 'B', 12)
-    pdf.cell(140, 10, "Descripción", 1)
-    pdf.cell(50, 10, "Valor", 1, 1, 'C')
+    pdf.cell(140, 10, clean_text("Descripcion"), 1)
+    pdf.cell(50, 10, clean_text("Valor"), 1, 1, 'C')
+    
     pdf.set_font("Arial", size=12)
-    pdf.cell(140, 10, f"Transporte Base ({camion})", 1)
+    pdf.cell(140, 10, clean_text(f"Transporte Base ({nombre_camion_limpio})"), 1)
     pdf.cell(50, 10, f"${desglose['camion']:.2f}", 1, 1, 'R')
-    pdf.cell(140, 10, f"Personal ({personal} ayudantes)", 1)
+    
+    pdf.cell(140, 10, clean_text(f"Personal ({personal} ayudantes)"), 1)
     pdf.cell(50, 10, f"${desglose['personal']:.2f}", 1, 1, 'R')
-    pdf.cell(140, 10, "Recargo Pisos/Escaleras", 1)
+    
+    pdf.cell(140, 10, clean_text("Recargo Pisos/Escaleras"), 1)
     pdf.cell(50, 10, f"${desglose['pisos']:.2f}", 1, 1, 'R')
-    pdf.cell(140, 10, f"Materiales ({materiales})", 1)
+    
+    pdf.cell(140, 10, clean_text(f"Materiales ({materiales})"), 1)
     pdf.cell(50, 10, f"${desglose['materiales']:.2f}", 1, 1, 'R')
-    pdf.cell(140, 10, "Tarifa Ciudad", 1)
+    
+    pdf.cell(140, 10, clean_text("Tarifa Ciudad"), 1)
     pdf.cell(50, 10, "$0.00", 1, 1, 'R')
+    
     pdf.set_font("Arial", 'B', 14)
     pdf.set_text_color(46, 0, 78)
-    pdf.cell(140, 15, "TOTAL ESTIMADO", 1)
+    pdf.cell(140, 15, clean_text("TOTAL ESTIMADO"), 1)
     pdf.cell(50, 15, f"${total:.2f}", 1, 1, 'R')
     
-    # Agregar método de pago al PDF
-    pdf.ln(5)
-    pdf.set_font("Arial", 'I', 10)
-    pdf.cell(0, 10, "Formas de Pago: Efectivo, Transferencia Bancaria, Deuna!", 0, 1, 'L')
+    # Métodos de Pago en el PDF
+    pdf.ln(10)
+    pdf.set_font("Arial", 'B', 10)
+    pdf.set_text_color(0, 0, 0)
+    pdf.cell(0, 10, clean_text("FORMAS DE PAGO ACEPTADAS:"), 0, 1, 'L')
+    pdf.set_font("Arial", '', 10)
+    pdf.cell(0, 6, clean_text("- Efectivo"), 0, 1, 'L')
+    pdf.cell(0, 6, clean_text("- Transferencia Bancaria (Pichincha / Guayaquil)"), 0, 1, 'L')
+    pdf.cell(0, 6, clean_text("- Deuna!"), 0, 1, 'L')
     
-    return pdf.output(dest='S').encode('latin-1')
+    return pdf.output(dest='S').encode('latin-1', 'ignore') # 'ignore' evita que explote si queda algún caracter raro
 
 # --- CSS BLINDADO ---
 st.markdown(f"""
@@ -80,20 +105,24 @@ st.markdown(f"""
     .stApp {{ background-color: {FONDO_APP}; font-family: 'Montserrat', sans-serif; }}
     h1, h2, h3, h4, h5, p, span, div, label, li {{ color: {COLOR_TEXTO} !important; }}
     
-    div[data-baseweb="input"], div[data-baseweb="base-input"], div[data-baseweb="select"], .stNumberInput div[data-baseweb="input"] {{
-        background-color: white !important; border: 1px solid #ccc !important; color: black !important;
+    /* SOLUCIÓN CAJAS NEGRAS */
+    div[data-baseweb="input"], div[data-baseweb="base-input"], div[data-baseweb="select"] {{
+        background-color: white !important;
+        border: 1px solid #ccc !important;
+        color: black !important;
     }}
+    .stNumberInput input {{ background-color: white !important; color: black !important; }}
     input {{ color: black !important; caret-color: black !important; }}
-    div[data-testid="stNumberInputContainer"] {{ background-color: white !important; color: black !important; }}
     
-    ul[data-testid="stSelectboxVirtualDropdown"] {{ background-color: white !important; border: 1px solid #ccc !important; }}
+    /* DROPDOWNS */
+    ul[data-testid="stSelectboxVirtualDropdown"] {{ background-color: white !important; }}
     li[role="option"] {{ background-color: white !important; color: black !important; }}
     li[role="option"]:hover {{ background-color: {COLOR_AMARILLO} !important; color: black !important; }}
     
-    .streamlit-expanderHeader {{ background-color: white !important; color: black !important; border: 1px solid #ccc; }}
-    div[data-testid="stExpanderDetails"] {{ background-color: white !important; border: 1px solid #ccc; color: black !important; }}
-    div[data-baseweb="checkbox"] p {{ color: {COLOR_TEXTO} !important; }}
-
+    /* ESTILO TIPs Y RESEÑAS */
+    .tip-box {{ padding: 10px; border-bottom: 1px solid #eee; font-size: 14px; }}
+    .review-card {{ background-color: white; padding: 15px; border-radius: 10px; margin-bottom: 10px; border-left: 4px solid {COLOR_AMARILLO}; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }}
+    
     .control-panel {{ background-color: {COLOR_CARD_BG}; padding: 20px; border-radius: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; }}
     .slogan-box {{ background-color: white; padding: 10px 20px; border-radius: 10px; border-left: 5px solid {COLOR_MORADO}; font-style: italic; color: #555 !important; margin-top: 5px; }}
     
@@ -115,15 +144,8 @@ st.markdown(f"""
     .bg-purple {{ background-color: #F3E5F5; }}
     .action-text {{ font-size: 13px; font-weight: 700; color: #374151; }}
     
-    .success-box {{ background-color: #ECFDF5; border: 1px solid #10B981; color: #065F46; padding: 15px; border-radius: 10px; margin-top: 10px; font-size: 14px; text-align: center; }}
     .stDownloadButton > button {{ background-color: white !important; color: {COLOR_MORADO} !important; border: 1px solid {COLOR_MORADO} !important; border-radius: 8px !important; padding: 5px 15px !important; }}
     .stDownloadButton > button:hover {{ background-color: {COLOR_MORADO} !important; color: white !important; }}
-
-    /* ESTILO PARA TIPS Y RESEÑAS */
-    .tip-item {{ padding: 8px; border-bottom: 1px solid #eee; font-size: 14px; }}
-    .review-box {{ background-color: #f9f9f9; padding: 10px; border-radius: 8px; margin-bottom: 10px; border-left: 3px solid {COLOR_AMARILLO}; }}
-    .review-stars {{ color: #FFC107; }}
-    .review-user {{ font-weight: bold; font-size: 13px; }}
 
     header {{ visibility: hidden; }} footer {{ visibility: hidden; }}
     </style>
@@ -141,6 +163,7 @@ with col_titulo:
 # --- PANEL DE CONFIGURACIÓN ---
 st.markdown(f"<div class='control-panel'>", unsafe_allow_html=True)
 st.markdown("### ⚙️ Configura tu Servicio")
+
 c1, c2, c3, c4 = st.columns(4) 
 with c1:
     st.markdown("**1. Fecha y Vehículo**")
@@ -154,10 +177,12 @@ with c1:
     }
     seleccion = st.selectbox("🚛 Camión", list(vehiculos.keys()))
     dato_camion = vehiculos[seleccion]
+
 with c2:
     st.markdown("**2. Personal**")
     personal = st.slider("👷 Ayudantes", 0, 10, 0)
     st.caption("Tarifa: $15 c/u")
+
 with c3:
     st.markdown("**3. Pisos / Accesos**")
     st.caption("Escaleras: $10 extra cada 2 pisos")
@@ -168,10 +193,12 @@ with c3:
     with col_llegada:
         piso_llegada = st.selectbox("Llegada", ["PB", "1", "2", "3", "4", "5+"], key="piso_lleg")
         asc_llegada = st.checkbox("Ascensor Ll.")
+
 with c4:
     st.markdown("**4. Materiales**")
     cajas = st.number_input("📦 Cajas ($1.50 c/u)", 0, 100, 0) 
     rollos = st.number_input("🗞️ Rollos ($20.00 c/u)", 0, 20, 0) 
+
 st.markdown("</div>", unsafe_allow_html=True)
 
 # --- INVENTARIO ---
@@ -275,7 +302,7 @@ with k3:
 st.write("")
 
 # --- ACCIONES RÁPIDAS ---
-ac1, ac2 = st.columns(2) # Simplificamos a 2 columnas principales para darle fuerza al botón
+ac1, ac2 = st.columns(2)
 msg = f"""Hola Mudanza Prime. Solicito Reserva:
 🚚 Vehículo: {seleccion}
 📅 Fecha: {fecha_str}
@@ -292,10 +319,8 @@ with ac1:
     st.markdown(btn("📲", "CONFIRMAR RESERVA (WhatsApp)", "bg-green", lnk), unsafe_allow_html=True)
     st.markdown("""<div class="success-box">✅ Envía los datos directamente a nuestro sistema.</div>""", unsafe_allow_html=True)
 with ac2: 
-    # Botón visual de PDF
     col_pdf1, col_pdf2 = st.columns([1, 4])
-    with col_pdf1:
-        st.markdown("""<div style="font-size:30px; text-align:center;">📄</div>""", unsafe_allow_html=True)
+    with col_pdf1: st.markdown("""<div style="font-size:30px; text-align:center;">📄</div>""", unsafe_allow_html=True)
     with col_pdf2:
          pdf_bytes = generar_pdf(
             fecha=fecha_str,
@@ -317,78 +342,75 @@ with ac2:
 
 st.write("")
 
-# --- DESGLOSE ---
-html_desglose = f"""
-<div style="background-color:{COLOR_CARD_BG}; padding:20px; border-radius:15px; box-shadow:0 4px 6px rgba(0,0,0,0.02); margin-bottom: 20px;">
-    <h4 style="margin-bottom:20px; color:{COLOR_TEXTO};">🧾 Desglose de Servicios</h4>
-    <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee;">
-        <span style="color:#666;">🚛 {seleccion}</span><span style="font-weight:bold; color:{COLOR_TEXTO};">${precio_camion:.2f}</span>
-    </div>
-    <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee;">
-        <span style="color:#666;">👷 {personal} Cargadores</span><span style="font-weight:bold; color:{COLOR_TEXTO};">${precio_personal:.2f}</span>
-    </div>
-    <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee;">
-        <span style="color:#666;">🏢 Accesos / Escaleras</span><span style="font-weight:bold; color:{COLOR_TEXTO};">${precio_pisos:.2f}</span>
-    </div>
-    <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee;">
-        <span style="color:#666;">📦 Materiales</span><span style="font-weight:bold; color:{COLOR_TEXTO};">${precio_materiales:.2f}</span>
-    </div>
-    <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee;">
-        <span style="color:#666;">📍 Cobertura Ciudad</span><span style="font-weight:bold; color:#2E7D32;">Incluida</span>
-    </div>
-    <div style="border-top: 1px solid #eee; margin-top:10px; padding-top:10px;">
-        <span style="font-weight:bold; color:{COLOR_TEXTO};">💳 Métodos de Pago Aceptados:</span><br>
-        <span style="font-size:14px; color:#666;">💵 Efectivo | 🏦 Transferencia (Pichincha/Guayaquil) | 📱 Deuna!</span>
-    </div>
-    <div style="display:flex; justify-content:space-between; padding:15px 0; margin-top:10px;">
-        <span style="font-weight:bold; font-size:18px; color:{COLOR_MORADO};">TOTAL FINAL</span>
-        <span style="font-weight:bold; font-size:18px; color:{COLOR_MORADO};">${total:.2f}</span>
-    </div>
-</div>
-"""
-st.markdown(html_desglose, unsafe_allow_html=True)
+# --- DESGLOSE + TIPS + RESEÑAS ---
+c_desglose, c_extra = st.columns([3, 2])
 
-# --- SECCIONES EXTRA (TIPS Y RESEÑAS) ---
-c_tips, c_resenas = st.columns(2)
+with c_desglose:
+    # DESGLOSE HTML
+    html_desglose = f"""
+    <div style="background-color:{COLOR_CARD_BG}; padding:20px; border-radius:15px; box-shadow:0 4px 6px rgba(0,0,0,0.02); margin-bottom: 20px;">
+        <h4 style="margin-bottom:20px; color:{COLOR_TEXTO};">🧾 Desglose de Servicios</h4>
+        <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee;">
+            <span style="color:#666;">🚛 {seleccion}</span><span style="font-weight:bold; color:{COLOR_TEXTO};">${precio_camion:.2f}</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee;">
+            <span style="color:#666;">👷 {personal} Cargadores</span><span style="font-weight:bold; color:{COLOR_TEXTO};">${precio_personal:.2f}</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee;">
+            <span style="color:#666;">🏢 Accesos / Escaleras</span><span style="font-weight:bold; color:{COLOR_TEXTO};">${precio_pisos:.2f}</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee;">
+            <span style="color:#666;">📦 Materiales</span><span style="font-weight:bold; color:{COLOR_TEXTO};">${precio_materiales:.2f}</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee;">
+            <span style="color:#666;">📍 Cobertura Ciudad</span><span style="font-weight:bold; color:#2E7D32;">Incluida</span>
+        </div>
+        <div style="border-top: 1px solid #eee; margin-top:10px; padding-top:10px;">
+            <span style="font-weight:bold; color:{COLOR_TEXTO};">💳 Métodos de Pago:</span><br>
+            <span style="font-size:14px; color:#666;">💵 Efectivo | 🏦 Transferencia | 📱 Deuna!</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; padding:15px 0; margin-top:10px;">
+            <span style="font-weight:bold; font-size:18px; color:{COLOR_MORADO};">TOTAL FINAL</span>
+            <span style="font-weight:bold; font-size:18px; color:{COLOR_MORADO};">${total:.2f}</span>
+        </div>
+    </div>
+    """
+    st.markdown(html_desglose, unsafe_allow_html=True)
 
-with c_tips:
-    with st.expander("💡 10 Tips para una Mudanza Perfecta"):
+with c_extra:
+    # SECCIÓN TIPS
+    with st.expander("💡 10 Tips de Mudanza", expanded=False):
         st.markdown("""
-        <div class="tip-item">1. 📅 <b>Reserva con tiempo:</b> Al menos 3 días antes para asegurar cupo.</div>
-        <div class="tip-item">2. 🧊 <b>Refrigeradora:</b> Desconéctala 24h antes y sécala bien.</div>
-        <div class="tip-item">3. 🏷️ <b>Etiqueta todo:</b> Pon el nombre de la habitación en cada caja.</div>
-        <div class="tip-item">4. 💼 <b>Joyas y Dinero:</b> Llévalos contigo en tu bolso personal.</div>
-        <div class="tip-item">5. 📦 <b>Cajas pesadas:</b> Libros en cajas pequeñas, almohadas en grandes.</div>
-        <div class="tip-item">6. 📺 <b>Cables:</b> Toma foto a las conexiones de tu TV antes de desconectar.</div>
-        <div class="tip-item">7. 👚 <b>Ropa:</b> Usa tu ropa blanda para acolchar objetos frágiles.</div>
-        <div class="tip-item">8. 🐕 <b>Mascotas:</b> Ten un lugar seguro para ellos el día de la mudanza.</div>
-        <div class="tip-item">9. 📏 <b>Mide accesos:</b> Asegúrate que los muebles grandes pasen por la puerta.</div>
-        <div class="tip-item">10. 🎒 <b>Kit Día 1:</b> Prepara una maleta con lo básico para tu primera noche.</div>
+        <div class="tip-box">1. 📅 Reserva 3 días antes.</div>
+        <div class="tip-box">2. 🧊 Descongela la refri 24h antes.</div>
+        <div class="tip-box">3. 🏷️ Etiqueta las cajas por cuarto.</div>
+        <div class="tip-box">4. 💼 Joyas y dinero llévalos tú.</div>
+        <div class="tip-box">5. 📦 Libros en cajas pequeñas.</div>
+        <div class="tip-box">6. 📺 Toma fotos a los cables de TV.</div>
+        <div class="tip-box">7. 👗 Usa ropa para proteger vidrio.</div>
+        <div class="tip-box">8. 🐕 Cuida a tus mascotas ese día.</div>
+        <div class="tip-box">9. 📏 Mide puertas y pasillos.</div>
+        <div class="tip-box">10. 🎒 Prepara maleta de primera noche.</div>
         """, unsafe_allow_html=True)
 
-with c_resenas:
-    with st.expander("⭐ Reseñas de Clientes (4.9/5)"):
-        st.markdown("""
-        <div class="review-box">
-            <div class="review-stars">⭐⭐⭐⭐⭐</div>
-            <div class="review-user">María P.</div>
-            "Excelente servicio, llegaron super puntuales y cuidaron mucho mi refri."
-        </div>
-        <div class="review-box">
-            <div class="review-stars">⭐⭐⭐⭐⭐</div>
-            <div class="review-user">Carlos A.</div>
-            "Los chicos muy amables, armaron mi cama rapidísimo. Recomendados."
-        </div>
-        <div class="review-box">
-            <div class="review-stars">⭐⭐⭐⭐</div>
-            <div class="review-user">Luisa M.</div>
-            "Todo muy bien, el precio justo por el servicio."
-        </div>
-        """, unsafe_allow_html=True)
-        
-        st.write("---")
-        st.write("**¡Tu opinión nos importa!**")
-        calificacion = st.slider("Califica tu experiencia:", 1, 5, 5)
-        comentario = st.text_input("Déjanos un comentario (opcional):")
-        if st.button("Enviar Calificación"):
-            st.success("¡Gracias! Tu comentario nos ayuda a mejorar.")
+    # SECCIÓN RESEÑAS
+    st.markdown("##### ⭐ Opiniones de Clientes")
+    st.markdown("""
+    <div class="review-card">
+        <div style="color:#FFC107;">⭐⭐⭐⭐⭐</div>
+        <div style="font-weight:bold; font-size:13px;">María P.</div>
+        "Excelente servicio, puntuales y cuidadosos."
+    </div>
+    <div class="review-card">
+        <div style="color:#FFC107;">⭐⭐⭐⭐⭐</div>
+        <div style="font-weight:bold; font-size:13px;">Carlos A.</div>
+        "Me ayudaron a armar todo super rápido."
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # INPUT DE CALIFICACIÓN
+    st.write("---")
+    st.caption("Déjanos tu opinión:")
+    calificacion = st.slider("Puntuación", 1, 5, 5)
+    if st.button("Enviar Calificación"):
+        st.toast("¡Gracias por tu opinión! ⭐")
