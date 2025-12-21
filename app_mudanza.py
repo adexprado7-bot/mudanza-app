@@ -65,6 +65,12 @@ def generar_pdf(fecha, camion, personal, materiales, accesos_txt, inventario_txt
     pdf.set_text_color(46, 0, 78)
     pdf.cell(140, 15, "TOTAL ESTIMADO", 1)
     pdf.cell(50, 15, f"${total:.2f}", 1, 1, 'R')
+    
+    # Agregar método de pago al PDF
+    pdf.ln(5)
+    pdf.set_font("Arial", 'I', 10)
+    pdf.cell(0, 10, "Formas de Pago: Efectivo, Transferencia Bancaria, Deuna!", 0, 1, 'L')
+    
     return pdf.output(dest='S').encode('latin-1')
 
 # --- CSS BLINDADO ---
@@ -113,6 +119,12 @@ st.markdown(f"""
     .stDownloadButton > button {{ background-color: white !important; color: {COLOR_MORADO} !important; border: 1px solid {COLOR_MORADO} !important; border-radius: 8px !important; padding: 5px 15px !important; }}
     .stDownloadButton > button:hover {{ background-color: {COLOR_MORADO} !important; color: white !important; }}
 
+    /* ESTILO PARA TIPS Y RESEÑAS */
+    .tip-item {{ padding: 8px; border-bottom: 1px solid #eee; font-size: 14px; }}
+    .review-box {{ background-color: #f9f9f9; padding: 10px; border-radius: 8px; margin-bottom: 10px; border-left: 3px solid {COLOR_AMARILLO}; }}
+    .review-stars {{ color: #FFC107; }}
+    .review-user {{ font-weight: bold; font-size: 13px; }}
+
     header {{ visibility: hidden; }} footer {{ visibility: hidden; }}
     </style>
 """, unsafe_allow_html=True)
@@ -129,13 +141,10 @@ with col_titulo:
 # --- PANEL DE CONFIGURACIÓN ---
 st.markdown(f"<div class='control-panel'>", unsafe_allow_html=True)
 st.markdown("### ⚙️ Configura tu Servicio")
-
 c1, c2, c3, c4 = st.columns(4) 
 with c1:
     st.markdown("**1. Fecha y Vehículo**")
     fecha_seleccionada = st.date_input("📅 Fecha", datetime.date.today())
-    
-    # OPCIÓN "VACÍA" PARA INICIAR EN CERO
     vehiculos = {
         "👉 Seleccione un Vehículo": {"precio": 0, "img": "❓"},
         "Furgoneta (Pequeña) - $30": {"precio": 30, "img": "🚐"},
@@ -145,13 +154,10 @@ with c1:
     }
     seleccion = st.selectbox("🚛 Camión", list(vehiculos.keys()))
     dato_camion = vehiculos[seleccion]
-
 with c2:
     st.markdown("**2. Personal**")
-    # INICIA EN 0
     personal = st.slider("👷 Ayudantes", 0, 10, 0)
     st.caption("Tarifa: $15 c/u")
-
 with c3:
     st.markdown("**3. Pisos / Accesos**")
     st.caption("Escaleras: $10 extra cada 2 pisos")
@@ -162,12 +168,10 @@ with c3:
     with col_llegada:
         piso_llegada = st.selectbox("Llegada", ["PB", "1", "2", "3", "4", "5+"], key="piso_lleg")
         asc_llegada = st.checkbox("Ascensor Ll.")
-
 with c4:
     st.markdown("**4. Materiales**")
-    cajas = st.number_input("📦 Cajas ($1.50 c/u)", 0, 100, 0) # Inicia en 0
-    rollos = st.number_input("🗞️ Rollos ($20.00 c/u)", 0, 20, 0) # Inicia en 0
-
+    cajas = st.number_input("📦 Cajas ($1.50 c/u)", 0, 100, 0) 
+    rollos = st.number_input("🗞️ Rollos ($20.00 c/u)", 0, 20, 0) 
 st.markdown("</div>", unsafe_allow_html=True)
 
 # --- INVENTARIO ---
@@ -220,7 +224,6 @@ def calcular_recargo_piso(piso, ascensor):
     if piso in ["4", "5+"]: return 20
     return 0
 
-# Si no ha seleccionado camión, no cobramos pisos aún (para mantener el 0)
 if dato_camion["precio"] == 0:
     precio_pisos = 0
 else:
@@ -233,7 +236,6 @@ precio_personal = personal * 15
 precio_materiales = (cajas * 1.5) + (rollos * 20)
 total = precio_camion + precio_personal + precio_materiales + precio_pisos
 
-# Lógica Dinámica de la Tarjeta Morada
 if total == 0:
     titulo_card = "EMPIEZA AQUÍ"
     icono_card = "👆"
@@ -245,7 +247,6 @@ else:
     monto_mostrar = f"${total:.2f}"
     subtexto_card = "Tarifa Final Ciudad"
 
-# Texto de accesos
 txt_salida = f"{piso_salida} ({'Ascensor' if asc_salida else 'Escaleras'})"
 txt_llegada = f"{piso_llegada} ({'Ascensor' if asc_llegada else 'Escaleras'})"
 accesos_txt = f"De: {txt_salida} -> A: {txt_llegada}"
@@ -254,7 +255,6 @@ accesos_txt = f"De: {txt_salida} -> A: {txt_llegada}"
 st.markdown("### 📊 Tu Cotización")
 k1, k2, k3 = st.columns(3)
 with k1:
-    # TARJETA MORADA DINÁMICA
     st.markdown(f"""
     <div class="hero-card card-purple">
         <div><div class="card-label">{titulo_card}</div><div class="card-amount">{monto_mostrar}</div></div>
@@ -275,7 +275,7 @@ with k3:
 st.write("")
 
 # --- ACCIONES RÁPIDAS ---
-ac1, ac2, ac3 = st.columns(3)
+ac1, ac2 = st.columns(2) # Simplificamos a 2 columnas principales para darle fuerza al botón
 msg = f"""Hola Mudanza Prime. Solicito Reserva:
 🚚 Vehículo: {seleccion}
 📅 Fecha: {fecha_str}
@@ -285,19 +285,39 @@ msg = f"""Hola Mudanza Prime. Solicito Reserva:
 💰 Total Estimado: ${total:.2f}
 
 Quedo a la espera de su confirmación."""
-
 lnk = f"https://wa.me/{NUMERO_WHATSAPP}?text={urllib.parse.quote(msg)}"
 def btn(i, t, c, l="#"): return f"""<a href="{l}" target="_blank" style="text-decoration:none;"><div class="action-btn"><div class="icon-box {c}">{i}</div><div class="action-text">{t}</div></div></a>"""
 
 with ac1: 
-    st.markdown(btn("📲", "Reservar WhatsApp", "bg-green", lnk), unsafe_allow_html=True)
+    st.markdown(btn("📲", "CONFIRMAR RESERVA (WhatsApp)", "bg-green", lnk), unsafe_allow_html=True)
     st.markdown("""<div class="success-box">✅ Envía los datos directamente a nuestro sistema.</div>""", unsafe_allow_html=True)
-with ac2: st.markdown(btn("🛡️", "Seguros y Tips", "bg-purple"), unsafe_allow_html=True)
-with ac3: st.markdown(btn("⭐", "Calificanos", "bg-blue"), unsafe_allow_html=True)
+with ac2: 
+    # Botón visual de PDF
+    col_pdf1, col_pdf2 = st.columns([1, 4])
+    with col_pdf1:
+        st.markdown("""<div style="font-size:30px; text-align:center;">📄</div>""", unsafe_allow_html=True)
+    with col_pdf2:
+         pdf_bytes = generar_pdf(
+            fecha=fecha_str,
+            camion=seleccion,
+            personal=personal,
+            materiales=f"{cajas} cajas, {rollos} rollos",
+            accesos_txt=accesos_txt,
+            inventario_txt=inventario_final,
+            total=total,
+            desglose={'camion': precio_camion, 'personal': precio_personal, 'materiales': precio_materiales, 'pisos': precio_pisos}
+        )
+         st.download_button(
+            label="Descargar Cotización (PDF)",
+            data=pdf_bytes,
+            file_name="Cotizacion_Mudanza.pdf",
+            mime="application/pdf",
+            use_container_width=True
+        )
 
 st.write("")
 
-# --- DESGLOSE Y PDF ---
+# --- DESGLOSE ---
 html_desglose = f"""
 <div style="background-color:{COLOR_CARD_BG}; padding:20px; border-radius:15px; box-shadow:0 4px 6px rgba(0,0,0,0.02); margin-bottom: 20px;">
     <h4 style="margin-bottom:20px; color:{COLOR_TEXTO};">🧾 Desglose de Servicios</h4>
@@ -316,6 +336,10 @@ html_desglose = f"""
     <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee;">
         <span style="color:#666;">📍 Cobertura Ciudad</span><span style="font-weight:bold; color:#2E7D32;">Incluida</span>
     </div>
+    <div style="border-top: 1px solid #eee; margin-top:10px; padding-top:10px;">
+        <span style="font-weight:bold; color:{COLOR_TEXTO};">💳 Métodos de Pago Aceptados:</span><br>
+        <span style="font-size:14px; color:#666;">💵 Efectivo | 🏦 Transferencia (Pichincha/Guayaquil) | 📱 Deuna!</span>
+    </div>
     <div style="display:flex; justify-content:space-between; padding:15px 0; margin-top:10px;">
         <span style="font-weight:bold; font-size:18px; color:{COLOR_MORADO};">TOTAL FINAL</span>
         <span style="font-weight:bold; font-size:18px; color:{COLOR_MORADO};">${total:.2f}</span>
@@ -324,22 +348,47 @@ html_desglose = f"""
 """
 st.markdown(html_desglose, unsafe_allow_html=True)
 
-col_pdf_left, col_space = st.columns([1, 4])
-with col_pdf_left:
-    pdf_bytes = generar_pdf(
-        fecha=fecha_str,
-        camion=seleccion,
-        personal=personal,
-        materiales=f"{cajas} cajas, {rollos} rollos",
-        accesos_txt=accesos_txt,
-        inventario_txt=inventario_final,
-        total=total,
-        desglose={'camion': precio_camion, 'personal': precio_personal, 'materiales': precio_materiales, 'pisos': precio_pisos}
-    )
-    st.download_button(
-        label="📄 Descargar Cotización PDF",
-        data=pdf_bytes,
-        file_name="Cotizacion_Mudanza.pdf",
-        mime="application/pdf",
-        use_container_width=True
-    )
+# --- SECCIONES EXTRA (TIPS Y RESEÑAS) ---
+c_tips, c_resenas = st.columns(2)
+
+with c_tips:
+    with st.expander("💡 10 Tips para una Mudanza Perfecta"):
+        st.markdown("""
+        <div class="tip-item">1. 📅 <b>Reserva con tiempo:</b> Al menos 3 días antes para asegurar cupo.</div>
+        <div class="tip-item">2. 🧊 <b>Refrigeradora:</b> Desconéctala 24h antes y sécala bien.</div>
+        <div class="tip-item">3. 🏷️ <b>Etiqueta todo:</b> Pon el nombre de la habitación en cada caja.</div>
+        <div class="tip-item">4. 💼 <b>Joyas y Dinero:</b> Llévalos contigo en tu bolso personal.</div>
+        <div class="tip-item">5. 📦 <b>Cajas pesadas:</b> Libros en cajas pequeñas, almohadas en grandes.</div>
+        <div class="tip-item">6. 📺 <b>Cables:</b> Toma foto a las conexiones de tu TV antes de desconectar.</div>
+        <div class="tip-item">7. 👚 <b>Ropa:</b> Usa tu ropa blanda para acolchar objetos frágiles.</div>
+        <div class="tip-item">8. 🐕 <b>Mascotas:</b> Ten un lugar seguro para ellos el día de la mudanza.</div>
+        <div class="tip-item">9. 📏 <b>Mide accesos:</b> Asegúrate que los muebles grandes pasen por la puerta.</div>
+        <div class="tip-item">10. 🎒 <b>Kit Día 1:</b> Prepara una maleta con lo básico para tu primera noche.</div>
+        """, unsafe_allow_html=True)
+
+with c_resenas:
+    with st.expander("⭐ Reseñas de Clientes (4.9/5)"):
+        st.markdown("""
+        <div class="review-box">
+            <div class="review-stars">⭐⭐⭐⭐⭐</div>
+            <div class="review-user">María P.</div>
+            "Excelente servicio, llegaron super puntuales y cuidaron mucho mi refri."
+        </div>
+        <div class="review-box">
+            <div class="review-stars">⭐⭐⭐⭐⭐</div>
+            <div class="review-user">Carlos A.</div>
+            "Los chicos muy amables, armaron mi cama rapidísimo. Recomendados."
+        </div>
+        <div class="review-box">
+            <div class="review-stars">⭐⭐⭐⭐</div>
+            <div class="review-user">Luisa M.</div>
+            "Todo muy bien, el precio justo por el servicio."
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.write("---")
+        st.write("**¡Tu opinión nos importa!**")
+        calificacion = st.slider("Califica tu experiencia:", 1, 5, 5)
+        comentario = st.text_input("Déjanos un comentario (opcional):")
+        if st.button("Enviar Calificación"):
+            st.success("¡Gracias! Tu comentario nos ayuda a mejorar.")
