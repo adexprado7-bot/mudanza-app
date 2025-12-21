@@ -5,24 +5,54 @@ import urllib.parse
 # --- CONFIGURACIÓN ---
 st.set_page_config(page_title="Mudanza Prime | Panel", page_icon="🚚", layout="wide")
 
+# --- CABECERA SUPERIOR (LOGO Y MODO OSCURO) ---
+col_header_1, col_header_2 = st.columns([4, 1])
+
+with col_header_1:
+    st.markdown("## 🚚 MUDANZA PRIME")
+
+with col_header_2:
+    # EL INTERRUPTOR AHORA ESTÁ AQUÍ, BIEN VISIBLE
+    modo_oscuro = st.toggle("🌙 Modo Oscuro", value=False)
+
 # --- COLORES ---
 COLOR_MORADO = "#2E004E"
 COLOR_AMARILLO = "#FFC300"
-FONDO_GRIS = "#F4F6F8"
 
-# --- CSS (ESTILO BANCO) ---
+if modo_oscuro:
+    FONDO_APP = "#0E1117"
+    COLOR_TEXTO = "#FFFFFF"
+    COLOR_CARD_BG = "#1A1F2C"
+    COLOR_INPUT_BG = "#262730"
+else:
+    FONDO_APP = "#F4F6F8"
+    COLOR_TEXTO = "#1F2937"
+    COLOR_CARD_BG = "#FFFFFF"
+    COLOR_INPUT_BG = "#FFFFFF"
+
+# --- CSS (ESTILO BANCO + CONTROLES VISIBLES) ---
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
     
-    .stApp {{ background-color: {FONDO_GRIS}; font-family: 'Montserrat', sans-serif; }}
+    .stApp {{ background-color: {FONDO_APP}; font-family: 'Montserrat', sans-serif; }}
     
-    /* Textos oscuros */
-    h1, h2, h3, p, span, div {{ color: #1F2937; }}
+    /* Textos */
+    h1, h2, h3, h4, p, span, div, label {{ color: {COLOR_TEXTO} !important; }}
     
-    /* TARJETAS HERO */
+    /* PANELES DE CONTROL (INPUTS) */
+    .control-panel {{
+        background-color: {COLOR_CARD_BG};
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        margin-bottom: 20px;
+        border: 1px solid rgba(0,0,0,0.05);
+    }}
+    
+    /* TARJETAS HERO (BANCO) */
     .hero-card {{
-        border-radius: 20px; padding: 25px; color: white; height: 180px;
+        border-radius: 20px; padding: 25px; color: white; height: 160px;
         display: flex; flex-direction: column; justify-content: space-between;
         box-shadow: 0 10px 25px rgba(0,0,0,0.08); transition: transform 0.2s;
     }}
@@ -34,201 +64,162 @@ st.markdown(f"""
     .card-yellow {{ background: linear-gradient(135deg, {COLOR_AMARILLO} 0%, #ffca28 100%); }}
     .card-yellow div {{ color: {COLOR_MORADO} !important; }}
     
-    .card-white {{ background: white; border: 1px solid #E5E7EB; }}
-    .card-white div {{ color: #374151 !important; }}
+    .card-label {{ font-size: 12px; font-weight: 700; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; }}
+    .card-amount {{ font-size: 32px; font-weight: 800; margin-top: 5px; }}
 
-    .card-label {{ font-size: 13px; font-weight: 600; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; }}
-    .card-amount {{ font-size: 38px; font-weight: 800; margin-top: 5px; }}
-    .card-footer {{ font-size: 12px; opacity: 0.8; }}
-
-    /* BOTONES ACCIÓN */
+    /* Inputs Personalizados */
+    .stDateInput input, .stSelectbox div[data-baseweb="select"], .stNumberInput input {{
+        background-color: {COLOR_INPUT_BG} !important;
+        color: {COLOR_TEXTO} !important;
+        border-radius: 8px;
+    }}
+    
+    /* BOTONES DE ACCIÓN */
     .action-btn {{
-        background-color: white; border-radius: 16px; padding: 20px; text-align: center;
+        background-color: {COLOR_CARD_BG}; border-radius: 16px; padding: 15px; text-align: center;
         box-shadow: 0 4px 6px rgba(0,0,0,0.02); cursor: pointer; transition: all 0.2s; height: 100%;
         display: flex; flex-direction: column; align-items: center; justify-content: center;
+        border: 1px solid rgba(0,0,0,0.05);
     }}
-    .action-btn:hover {{ transform: scale(1.03); box-shadow: 0 10px 15px rgba(0,0,0,0.05); }}
+    .action-btn:hover {{ transform: scale(1.03); border-color: {COLOR_AMARILLO}; }}
     
     .icon-box {{
-        width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-        font-size: 24px; margin-bottom: 12px;
+        width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        font-size: 20px; margin-bottom: 10px;
     }}
     .bg-green {{ background-color: #E8F5E9; }}
     .bg-blue {{ background-color: #E3F2FD; }}
     .bg-yellow {{ background-color: #FFF8E1; }}
     .bg-purple {{ background-color: #F3E5F5; }}
-    .action-text {{ font-size: 14px; font-weight: 700; color: #374151; }}
+    .action-text {{ font-size: 13px; font-weight: 700; color: #374151; }}
 
-    /* LISTA TRANSACCIONES (CSS PURO) */
-    .transaccion-container {{
-        background-color: white; border-radius: 20px; padding: 25px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.02);
-    }}
-    .t-row {{
-        display: flex; align-items: center; justify-content: space-between;
-        padding: 16px 0; border-bottom: 1px solid #F3F4F6;
-    }}
-    .t-row:last-child {{ border-bottom: none; }}
-    .t-icon {{ 
-        width: 42px; height: 42px; background-color: #F9FAFB; color: #333;
-        border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-right: 15px;
-    }}
-    .t-title {{ font-weight: 700; font-size: 15px; color: #111827; }}
-    .t-desc {{ font-size: 13px; color: #6B7280; }}
-    .t-price {{ font-weight: 700; font-size: 16px; color: {COLOR_MORADO}; }}
-    
-    /* Ocultar elementos extraños */
+    /* OCULTAR BARRA SUPERIOR STREAMLIT */
     header {{ visibility: hidden; }}
     footer {{ visibility: hidden; }}
-    .stButton>button {{ width: 100%; background-color: {COLOR_AMARILLO}; color: {COLOR_MORADO}; border:none; border-radius:12px; font-weight:bold; }}
     </style>
 """, unsafe_allow_html=True)
 
-# --- SIDEBAR ---
-with st.sidebar:
-    try: st.image("logo.jpg", width=140)
-    except: st.markdown("## MUDANZA PRIME")
-    st.write("---")
+# --- PANEL DE CONTROL PRINCIPAL (INPUTS) ---
+# Aquí es donde el usuario interactúa ahora, en lugar de la barra lateral
+
+st.markdown(f"<div class='control-panel'>", unsafe_allow_html=True)
+st.markdown("### ⚙️ Configura tu Servicio")
+
+col_inp1, col_inp2, col_inp3 = st.columns(3)
+
+with col_inp1:
+    st.markdown("**1. Fecha y Vehículo**")
+    # CALENDARIO DESPLEGABLE
+    fecha_seleccionada = st.date_input("📅 Fecha de Mudanza", datetime.date.today())
     
+    # SELECTOR DE CAMIÓN (Desplegable grande)
     vehiculos = {
         "Furgoneta (Pequeña)": {"precio": 30, "img": "🚐"},
         "Camión 2 Toneladas": {"precio": 40, "img": "🚛"},
         "Camión 3.5 Toneladas": {"precio": 50, "img": "🚚"},
         "Camión 6 Toneladas": {"precio": 60, "img": "🚛🚛"}
     }
-    seleccion = st.selectbox("Vehículo", list(vehiculos.keys()))
+    seleccion = st.selectbox("🚛 Tamaño del Camión", list(vehiculos.keys()))
     dato_camion = vehiculos[seleccion]
 
-    distancia = st.number_input("Distancia (km)", 1, 500, 10)
-    personal = st.slider("Ayudantes", 0, 10, 2)
-    st.write("---")
-    cajas = st.number_input("Cajas ($1.50)", 0, 100, 10)
-    rollos = st.number_input("Rollos ($20)", 0, 20, 1)
-    st.write("---")
-    colA, colB = st.columns(2)
-    with colA:
-        piso_salida = st.selectbox("Salida", ["PB", "1", "2", "3+"])
-        asc_salida = st.checkbox("Ascensor S.")
-    with colB:
-        piso_llegada = st.selectbox("Llegada", ["PB", "1", "2", "3+"])
-        asc_llegada = st.checkbox("Ascensor L.")
+with col_inp2:
+    st.markdown("**2. Distancia y Ayuda**")
+    distancia = st.number_input("📍 Distancia (km)", min_value=1, value=10)
+    # SLIDER DE CARGADORES
+    personal = st.slider("👷 Cargadores Necesarios", 0, 10, 2)
+
+with col_inp3:
+    st.markdown("**3. Materiales**")
+    col_mat1, col_mat2 = st.columns(2)
+    with col_mat1:
+        cajas = st.number_input("📦 Cajas ($1.50)", 0, 100, 10)
+    with col_mat2:
+        rollos = st.number_input("🗞️ Rollos ($20)", 0, 20, 1)
+
+st.markdown("</div>", unsafe_allow_html=True)
 
 # --- CÁLCULOS ---
-def calc_recargo(piso, ascensor):
-    if ascensor or piso == "PB": return 0
-    mapa = {"1": 10, "2": 20, "3+": 30}
-    return mapa.get(piso, 0)
-
-recargo_pisos = calc_recargo(piso_salida, asc_salida) + calc_recargo(piso_llegada, asc_llegada)
 costo_camion = dato_camion["precio"]
 costo_personal = personal * 15
 costo_materiales = (cajas * 1.5) + (rollos * 20)
 costo_distancia = distancia * 1.0
-total = costo_camion + costo_personal + costo_materiales + costo_distancia + recargo_pisos
+total = costo_camion + costo_personal + costo_materiales + costo_distancia
 
-# --- DEFINICIÓN DE HTML (ESTA ES LA SOLUCIÓN) ---
-# Definimos el HTML aquí, pegado a la izquierda, sin sangría.
+# --- DASHBOARD VISUAL (RESULTADOS) ---
+st.markdown("### 📊 Tu Cotización en Tiempo Real")
+
+# 1. TARJETAS
+c1, c2, c3 = st.columns(3)
+
+with c1:
+    # Tarjeta Precio
+    st.markdown(f"""
+    <div class="hero-card card-purple">
+        <div><div class="card-label">PRESUPUESTO ESTIMADO</div><div class="card-amount">${total:.2f}</div></div>
+        <div style="display:flex; justify-content:space-between; align-items:end;"><div style="font-size:12px; opacity:0.8;">IMPUESTOS INCLUIDOS</div><div style="font-size:24px;">💳</div></div>
+    </div>""", unsafe_allow_html=True)
+
+with c2:
+    # Tarjeta Vehículo
+    st.markdown(f"""
+    <div class="hero-card card-yellow">
+        <div><div class="card-label">VEHÍCULO SELECCIONADO</div><div class="card-amount">{dato_camion['img']}</div><div style="font-weight:700; color:{COLOR_MORADO};">{seleccion}</div></div>
+        <div style="font-size:12px; color:{COLOR_MORADO}; opacity:0.8;">CAPACIDAD IDEAL</div>
+    </div>""", unsafe_allow_html=True)
+
+with c3:
+    # Tarjeta Fecha
+    fecha_str = fecha_seleccionada.strftime("%d %B %Y")
+    st.markdown(f"""
+    <div class="hero-card" style="background-color:{COLOR_CARD_BG}; border: 1px solid #ddd;">
+        <div><div class="card-label" style="color:#666 !important;">FECHA PROGRAMADA</div><div class="card-amount" style="color:{COLOR_MORADO} !important; font-size: 28px;">{fecha_str}</div></div>
+        <div style="font-size:12px; color:#666 !important;">RESERVA DISPONIBLE</div>
+    </div>""", unsafe_allow_html=True)
+
+st.write("")
+
+# 2. ACCIONES RÁPIDAS
+st.markdown("##### ¿Qué deseas hacer?")
+ca, cb, cc, cd = st.columns(4)
+msg = f"Hola Mudanza Prime. Quiero reservar: {seleccion} para el {fecha_str}. Total: ${total:.2f}"
+lnk = f"https://wa.me/593999999999?text={urllib.parse.quote(msg)}"
+
+def btn(i, t, c, l="#"): return f"""<a href="{l}" target="_blank" style="text-decoration:none;"><div class="action-btn"><div class="icon-box {c}">{i}</div><div class="action-text">{t}</div></div></a>"""
+
+with ca: st.markdown(btn("📲", "Reservar WhatsApp", "bg-green", lnk), unsafe_allow_html=True)
+with cb: st.markdown(btn("📦", "Ver Inventario", "bg-yellow"), unsafe_allow_html=True)
+with cc: st.markdown(btn("🛡️", "Seguros y Tips", "bg-purple"), unsafe_allow_html=True)
+with cd: st.markdown(btn("⭐", "Calificanos", "bg-blue"), unsafe_allow_html=True)
+
+st.write("")
+st.write("")
+
+# 3. LISTA DE MOVIMIENTOS (DETALLE)
+# HTML Limpio sin sangría para evitar el error de caja negra
 html_desglose = f"""
-<div class="transaccion-container">
-    <div class="t-row">
-        <div style="display:flex; align-items:center;">
-            <div class="t-icon">🚛</div>
-            <div>
-                <div class="t-title">Vehículo Base</div>
-                <div class="t-desc">{seleccion}</div>
-            </div>
-        </div>
-        <div class="t-price">${costo_camion:.2f}</div>
+<div style="background-color:{COLOR_CARD_BG}; padding:20px; border-radius:15px; box-shadow:0 4px 6px rgba(0,0,0,0.02);">
+    <h4 style="margin-bottom:20px; color:{COLOR_TEXTO};">🧾 Desglose de Servicios</h4>
+    <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee;">
+        <span style="color:#666;">🚛 {seleccion}</span>
+        <span style="font-weight:bold; color:{COLOR_TEXTO};">${costo_camion:.2f}</span>
     </div>
-    <div class="t-row">
-        <div style="display:flex; align-items:center;">
-            <div class="t-icon">👷</div>
-            <div>
-                <div class="t-title">Personal de Carga</div>
-                <div class="t-desc">{personal} ayudantes x $15</div>
-            </div>
-        </div>
-        <div class="t-price">${costo_personal:.2f}</div>
+    <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee;">
+        <span style="color:#666;">👷 {personal} Cargadores</span>
+        <span style="font-weight:bold; color:{COLOR_TEXTO};">${costo_personal:.2f}</span>
     </div>
-    <div class="t-row">
-        <div style="display:flex; align-items:center;">
-            <div class="t-icon">📦</div>
-            <div>
-                <div class="t-title">Materiales</div>
-                <div class="t-desc">{cajas} Cajas + {rollos} Rollos</div>
-            </div>
-        </div>
-        <div class="t-price">${costo_materiales:.2f}</div>
+    <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee;">
+        <span style="color:#666;">📦 Materiales ({cajas} cajas, {rollos} rollos)</span>
+        <span style="font-weight:bold; color:{COLOR_TEXTO};">${costo_materiales:.2f}</span>
     </div>
-    <div class="t-row">
-        <div style="display:flex; align-items:center;">
-            <div class="t-icon">🏢</div>
-            <div>
-                <div class="t-title">Logística y Accesos</div>
-                <div class="t-desc">Recargo Pisos/Escaleras</div>
-            </div>
-        </div>
-        <div class="t-price">${recargo_pisos:.2f}</div>
+    <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee;">
+        <span style="color:#666;">📍 Distancia ({distancia} km)</span>
+        <span style="font-weight:bold; color:{COLOR_TEXTO};">${costo_distancia:.2f}</span>
     </div>
-    <div class="t-row" style="border-top: 2px dashed #eee; margin-top:10px;">
-        <div style="display:flex; align-items:center;">
-            <div class="t-title" style="color:{COLOR_MORADO}; font-size:18px;">TOTAL FINAL</div>
-        </div>
-        <div class="t-price" style="font-size:22px;">${total:.2f}</div>
+    <div style="display:flex; justify-content:space-between; padding:15px 0; margin-top:10px;">
+        <span style="font-weight:bold; font-size:18px; color:{COLOR_MORADO};">TOTAL FINAL</span>
+        <span style="font-weight:bold; font-size:18px; color:{COLOR_MORADO};">${total:.2f}</span>
     </div>
 </div>
 """
 
-# --- DASHBOARD VISUAL ---
-st.markdown("### Hola, Cliente Prime 👋")
-st.markdown("Resumen financiero de tu mudanza.")
-st.write("")
-
-# 1. TARJETAS
-c1, c2, c3 = st.columns(3)
-with c1:
-    st.markdown(f"""
-    <div class="hero-card card-purple">
-        <div><div class="card-label">PRESUPUESTO</div><div class="card-amount">${total:.2f}</div></div>
-        <div style="display:flex; justify-content:space-between; align-items:end;"><div class="card-footer">**** 1234</div><div style="font-size:24px;">💳</div></div>
-    </div>""", unsafe_allow_html=True)
-with c2:
-    st.markdown(f"""
-    <div class="hero-card card-yellow">
-        <div><div class="card-label">TRANSPORTE</div><div class="card-amount">{dato_camion['img']}</div><div style="font-weight:700;">{seleccion}</div></div>
-        <div class="card-footer">CAPACIDAD MEDIA</div>
-    </div>""", unsafe_allow_html=True)
-with c3:
-    fecha = datetime.date.today().strftime("%d %b")
-    st.markdown(f"""
-    <div class="hero-card card-white">
-        <div><div class="card-label" style="color:#666;">FECHA</div><div class="card-amount" style="color:{COLOR_MORADO};">{fecha}</div></div>
-        <div class="card-footer" style="color:#666;">COTIZACIÓN VÁLIDA 24H</div>
-    </div>""", unsafe_allow_html=True)
-
-st.write("")
-
-# 2. ACCIONES
-st.markdown("##### Acciones Rápidas")
-ca, cb, cc, cd = st.columns(4)
-msg = f"Hola Mudanza Prime. Quiero reservar: {seleccion} por ${total:.2f}"
-lnk = f"https://wa.me/593999999999?text={urllib.parse.quote(msg)}"
-def btn(i, t, c, l="#"): return f"""<a href="{l}" target="_blank" style="text-decoration:none;"><div class="action-btn"><div class="icon-box {c}">{i}</div><div class="action-text">{t}</div></div></a>"""
-
-with ca: st.markdown(btn("📲", "Reservar", "bg-green", lnk), unsafe_allow_html=True)
-with cb: st.markdown(btn("💬", "Soporte", "bg-blue", lnk), unsafe_allow_html=True)
-with cc: st.markdown(btn("📦", "Inventario", "bg-yellow"), unsafe_allow_html=True)
-with cd: st.markdown(btn("🛡️", "Seguros", "bg-purple"), unsafe_allow_html=True)
-
-st.write("")
-
-# 3. LISTA DE MOVIMIENTOS (Aquí usamos la variable limpia)
-c_lista, c_info = st.columns([2, 1])
-with c_lista:
-    st.markdown("##### Desglose de Costos")
-    st.markdown(html_desglose, unsafe_allow_html=True) # ¡Aquí ya no hay sangría que falle!
-
-with c_info:
-    st.markdown("##### Beneficios")
-    st.info("**Ahorro Prime**\n\nReserva anticipada = descuentos.")
-    st.success("**Garantía**\n\nTransporte asegurado.")
+st.markdown(html_desglose, unsafe_allow_html=True)
