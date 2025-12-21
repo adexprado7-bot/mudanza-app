@@ -1,29 +1,81 @@
 import streamlit as st
 import datetime
 import urllib.parse
+from fpdf import FPDF # <--- NECESITAS INSTALAR ESTO: pip install fpdf
 
 # --- CONFIGURACIÓN ---
 st.set_page_config(page_title="Mudanza Prime | Panel", page_icon="🚚", layout="wide")
 
-# --- CABECERA ---
-col_h1, col_h2 = st.columns([4, 1])
-with col_h1: st.markdown("## 🚚 MUDANZA PRIME")
-with col_h2: modo_oscuro = st.toggle("🌙 Modo Oscuro", value=False)
-
-# --- COLORES ---
+# --- COLORES FIJOS (MODO CLARO ESTILO BANCO) ---
 COLOR_MORADO = "#2E004E"
 COLOR_AMARILLO = "#FFC300"
+FONDO_APP = "#F4F6F8"
+COLOR_TEXTO = "#1F2937"
+COLOR_CARD_BG = "#FFFFFF"
+COLOR_INPUT_BG = "#FFFFFF"
 
-if modo_oscuro:
-    FONDO_APP = "#0E1117"
-    COLOR_TEXTO = "#FFFFFF"
-    COLOR_CARD_BG = "#1A1F2C"
-else:
-    FONDO_APP = "#F4F6F8"
-    COLOR_TEXTO = "#1F2937"
-    COLOR_CARD_BG = "#FFFFFF"
+# --- FUNCIÓN GENERADORA DE PDF ---
+class PDF(FPDF):
+    def header(self):
+        # Logo (si no tienes archivo logo.jpg, comenta la linea de abajo)
+        # self.image('logo.jpg', 10, 8, 33) 
+        self.set_font('Arial', 'B', 20)
+        self.set_text_color(46, 0, 78) # Morado
+        self.cell(0, 10, 'MUDANZA PRIME', 0, 1, 'C')
+        self.set_font('Arial', 'I', 10)
+        self.cell(0, 5, 'Presupuesto de Servicios Logísticos', 0, 1, 'C')
+        self.ln(10)
 
-# --- CSS BLINDADO (SOLUCIÓN FANTASMAS) ---
+    def footer(self):
+        self.set_y(-15)
+        self.set_font('Arial', 'I', 8)
+        self.set_text_color(128)
+        self.cell(0, 10, 'Mudanza Prime - Guayaquil, Ecuador | Documento no válido como factura tributaria', 0, 0, 'C')
+
+def generar_pdf(cliente, fecha, camion, personal, materiales, total):
+    pdf = PDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+    
+    # Información del Cliente
+    pdf.set_fill_color(240, 240, 240)
+    pdf.cell(0, 10, txt=f"Fecha de Emisión: {datetime.date.today()}", ln=1, fill=True)
+    pdf.ln(5)
+    
+    # Detalles del Servicio
+    pdf.set_text_color(0, 0, 0)
+    pdf.cell(0, 10, txt=f"Fecha Programada: {fecha}", ln=1)
+    pdf.cell(0, 10, txt=f"Vehículo Solicitado: {camion}", ln=1)
+    
+    pdf.ln(10)
+    
+    # Tabla de Costos
+    pdf.set_font("Arial", 'B', 12)
+    pdf.cell(140, 10, "Descripción", 1)
+    pdf.cell(50, 10, "Valor", 1, 1, 'C')
+    
+    pdf.set_font("Arial", size=12)
+    pdf.cell(140, 10, f"Servicio de Transporte ({camion})", 1)
+    pdf.cell(50, 10, f"${camion_precio:.2f}", 1, 1, 'R')
+    
+    pdf.cell(140, 10, f"Personal de Carga ({personal} personas)", 1)
+    pdf.cell(50, 10, f"${personal_precio:.2f}", 1, 1, 'R')
+    
+    pdf.cell(140, 10, f"Materiales ({materiales})", 1)
+    pdf.cell(50, 10, f"${materiales_precio:.2f}", 1, 1, 'R')
+    
+    pdf.cell(140, 10, "Tarifa Plana (Distancia incluida)", 1)
+    pdf.cell(50, 10, "$0.00", 1, 1, 'R')
+    
+    # Total
+    pdf.set_font("Arial", 'B', 14)
+    pdf.set_text_color(46, 0, 78) # Morado
+    pdf.cell(140, 15, "TOTAL A PAGAR", 1)
+    pdf.cell(50, 15, f"${total:.2f}", 1, 1, 'R')
+    
+    return pdf.output(dest='S').encode('latin-1')
+
+# --- CSS (ESTILO BANCO PURO) ---
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
@@ -31,54 +83,27 @@ st.markdown(f"""
     .stApp {{ background-color: {FONDO_APP}; font-family: 'Montserrat', sans-serif; }}
     h1, h2, h3, h4, p, span, div, label {{ color: {COLOR_TEXTO} !important; }}
     
-    /* 1. SOLUCIÓN DEFINITIVA PARA INPUTS Y SELECTORES */
-    /* Forzamos que la caja cerrada sea siempre blanca con texto negro */
+    /* SOLUCIÓN FANTASMAS (INPUTS BLANCOS SIEMPRE) */
     .stSelectbox div[data-baseweb="select"] > div, 
     .stDateInput div[data-baseweb="input"] > div,
     .stNumberInput div[data-baseweb="input"] > div {{
-        background-color: white !important;
-        color: black !important;
-        border: 1px solid #ddd !important;
+        background-color: white !important; color: black !important; border: 1px solid #ddd !important;
     }}
-    
-    /* Forzamos que el TEXTO dentro de los inputs sea negro */
     input {{ color: black !important; }}
+    ul[data-testid="stSelectboxVirtualDropdown"] {{ background-color: white !important; }}
+    li[role="option"] {{ color: black !important; background-color: white !important; }}
+    li[role="option"]:hover {{ background-color: {COLOR_AMARILLO} !important; color: {COLOR_MORADO} !important; }}
+    div[data-baseweb="calendar"] {{ background-color: white !important; }}
+    div[data-baseweb="calendar"] div {{ color: black !important; }}
+    button[data-baseweb="day"] {{ color: black !important; }}
     
-    /* 2. SOLUCIÓN PARA EL MENÚ DESPLEGABLE (EL FANTASMA) */
-    /* El contenedor de la lista desplegable */
-    ul[data-testid="stSelectboxVirtualDropdown"] {{
-        background-color: white !important;
-    }}
-    
-    /* Las opciones de la lista */
-    li[role="option"] {{
-        color: black !important; /* TEXTO NEGRO SIEMPRE */
-        background-color: white !important; /* FONDO BLANCO SIEMPRE */
-    }}
-    
-    /* Cuando pasas el mouse por encima */
-    li[role="option"]:hover {{
-        background-color: {COLOR_AMARILLO} !important;
-        color: {COLOR_MORADO} !important;
-    }}
-    
-    /* 3. SOLUCIÓN PARA EL CALENDARIO */
-    div[data-baseweb="calendar"] {{
-        background-color: white !important;
-    }}
-    div[data-baseweb="calendar"] div {{
-        color: black !important; /* Todo el texto del calendario negro */
-    }}
-    button[data-baseweb="day"] {{
-        color: black !important; /* Los números de los días negros */
-    }}
-    
-    /* PANELES Y TARJETAS */
+    /* PANELES */
     .control-panel {{
         background-color: {COLOR_CARD_BG}; padding: 20px; border-radius: 15px;
         box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid rgba(0,0,0,0.05);
     }}
     
+    /* TARJETAS HERO */
     .hero-card {{
         border-radius: 20px; padding: 25px; color: white; height: 160px;
         display: flex; flex-direction: column; justify-content: space-between;
@@ -119,6 +144,9 @@ st.markdown(f"""
     </style>
 """, unsafe_allow_html=True)
 
+# --- CABECERA ---
+st.markdown("## 🚚 MUDANZA PRIME")
+
 # --- PANEL DE CONTROL ---
 st.markdown(f"<div class='control-panel'>", unsafe_allow_html=True)
 st.markdown("### ⚙️ Configura tu Servicio")
@@ -128,7 +156,6 @@ col_inp1, col_inp2, col_inp3 = st.columns(3)
 with col_inp1:
     st.markdown("**1. Fecha y Vehículo**")
     fecha_seleccionada = st.date_input("📅 Fecha de Mudanza", datetime.date.today())
-    
     vehiculos = {
         "Furgoneta (Pequeña)": {"precio": 30, "img": "🚐"},
         "Camión 2 Toneladas": {"precio": 40, "img": "🚛"},
@@ -154,12 +181,12 @@ with col_inp3:
 st.markdown("</div>", unsafe_allow_html=True)
 
 # --- CÁLCULOS ---
-costo_camion = dato_camion["precio"]
-costo_personal = personal * 15
-costo_materiales = (cajas * 1.5) + (rollos * 20)
-total = costo_camion + costo_personal + costo_materiales
+camion_precio = dato_camion["precio"]
+personal_precio = personal * 15
+materiales_precio = (cajas * 1.5) + (rollos * 20)
+total = camion_precio + personal_precio + materiales_precio
 
-# --- RESULTADOS ---
+# --- DASHBOARD VISUAL ---
 st.markdown("### 📊 Tu Cotización (Tarifa Ciudad)")
 
 # TARJETAS
@@ -186,15 +213,41 @@ with c3:
 
 st.write("")
 
-# ACCIONES
+# --- ACCIONES RÁPIDAS (CON BOTÓN PDF) ---
 ca, cb, cc, cd = st.columns(4)
 msg = f"Hola Mudanza Prime. Quiero reservar: {seleccion} para el {fecha_str}. Total: ${total:.2f} (Tarifa Fija Ciudad)"
 lnk = f"https://wa.me/593999999999?text={urllib.parse.quote(msg)}"
-def btn(i, t, c, l="#"): return f"""<a href="{l}" target="_blank" style="text-decoration:none;"><div class="action-btn"><div class="icon-box {c}">{i}</div><div class="action-text">{t}</div></div></a>"""
 
-with ca: st.markdown(btn("📲", "Reservar WhatsApp", "bg-green", lnk), unsafe_allow_html=True)
-with cb: st.markdown(btn("📦", "Ver Inventario", "bg-yellow"), unsafe_allow_html=True)
-with cc: st.markdown(btn("🛡️", "Seguros y Tips", "bg-purple"), unsafe_allow_html=True)
+def btn(i, t, c, l="#"): 
+    return f"""<a href="{l}" target="_blank" style="text-decoration:none;"><div class="action-btn"><div class="icon-box {c}">{i}</div><div class="action-text">{t}</div></div></a>"""
+
+# Generamos el PDF en memoria
+pdf_bytes = generar_pdf(
+    cliente="Cliente Prime",
+    fecha=fecha_str,
+    camion=seleccion,
+    personal=personal,
+    materiales=f"{cajas} cajas, {rollos} rollos",
+    total=total
+)
+
+with ca: 
+    # Botón WhatsApp
+    st.markdown(btn("📲", "Reservar WhatsApp", "bg-green", lnk), unsafe_allow_html=True)
+
+with cb:
+    # BOTÓN DE DESCARGA PDF NATIVO DE STREAMLIT
+    # Usamos un contenedor vacío para estilizarlo, pero el botón funcional es el de Streamlit
+    st.markdown("""<div class="action-btn" style="padding: 10px;"><div class="icon-box bg-purple" style="margin-bottom:0;">📄</div></div>""", unsafe_allow_html=True)
+    st.download_button(
+        label="Descargar Factura",
+        data=pdf_bytes,
+        file_name=f"Presupuesto_MudanzaPrime_{fecha_str}.pdf",
+        mime="application/pdf",
+        use_container_width=True
+    )
+
+with cc: st.markdown(btn("📦", "Ver Inventario", "bg-yellow"), unsafe_allow_html=True)
 with cd: st.markdown(btn("⭐", "Calificanos", "bg-blue"), unsafe_allow_html=True)
 
 st.write("")
@@ -205,15 +258,15 @@ html_desglose = f"""
     <h4 style="margin-bottom:20px; color:{COLOR_TEXTO};">🧾 Desglose de Servicios</h4>
     <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee;">
         <span style="color:#666;">🚛 {seleccion} (Base)</span>
-        <span style="font-weight:bold; color:{COLOR_TEXTO};">${costo_camion:.2f}</span>
+        <span style="font-weight:bold; color:{COLOR_TEXTO};">${camion_precio:.2f}</span>
     </div>
     <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee;">
         <span style="color:#666;">👷 {personal} Cargadores</span>
-        <span style="font-weight:bold; color:{COLOR_TEXTO};">${costo_personal:.2f}</span>
+        <span style="font-weight:bold; color:{COLOR_TEXTO};">${personal_precio:.2f}</span>
     </div>
     <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee;">
         <span style="color:#666;">📦 Materiales ({cajas} cajas, {rollos} rollos)</span>
-        <span style="font-weight:bold; color:{COLOR_TEXTO};">${costo_materiales:.2f}</span>
+        <span style="font-weight:bold; color:{COLOR_TEXTO};">${materiales_precio:.2f}</span>
     </div>
     <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee;">
         <span style="color:#666;">📍 Cobertura / Distancia</span>
