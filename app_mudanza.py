@@ -13,6 +13,9 @@ FONDO_APP = "#F4F6F8"
 COLOR_TEXTO = "#1F2937"
 COLOR_CARD_BG = "#FFFFFF"
 
+# --- TU NÚMERO DE WHATSAPP ---
+NUMERO_WHATSAPP = "593998994518"
+
 # --- FUNCIÓN PDF ---
 class PDF(FPDF):
     def header(self):
@@ -20,31 +23,26 @@ class PDF(FPDF):
         self.set_text_color(46, 0, 78) 
         self.cell(0, 10, 'MUDANZA PRIME', 0, 1, 'C')
         self.set_font('Arial', 'I', 10)
-        self.cell(0, 5, 'Solicitud de Reserva - Sujeto a Aprobación', 0, 1, 'C')
+        self.cell(0, 5, 'Detalle de Solicitud de Servicio', 0, 1, 'C')
         self.ln(10)
     def footer(self):
         self.set_y(-15)
         self.set_font('Arial', 'I', 8)
         self.set_text_color(128)
-        self.cell(0, 10, 'Mudanza Prime - Esta cotización requiere validación de un administrador.', 0, 0, 'C')
+        self.cell(0, 10, 'Mudanza Prime - Guayaquil | Cotización sujeta a disponibilidad', 0, 0, 'C')
 
-def generar_pdf(fecha, camion, personal, materiales, inventario_txt, total, desglose):
+def generar_pdf(fecha, camion, personal, materiales, accesos_txt, inventario_txt, total, desglose):
     pdf = PDF()
     pdf.add_page()
-    pdf.set_font("Arial", size=12)
-    # Etiqueta de Estado
-    pdf.set_fill_color(255, 195, 0) # Amarillo
-    pdf.set_font("Arial", 'B', 12)
-    pdf.cell(0, 10, txt="ESTADO: PENDIENTE DE APROBACIÓN", ln=1, fill=True, align='C')
-    pdf.ln(5)
-    
     pdf.set_font("Arial", size=12)
     pdf.set_fill_color(240, 240, 240)
     pdf.cell(0, 10, txt=f"Fecha Emisión: {datetime.date.today()}", ln=1, fill=True)
     pdf.ln(5)
+    
     pdf.set_text_color(0, 0, 0)
     pdf.cell(0, 10, txt=f"Fecha Solicitada: {fecha}", ln=1)
     pdf.cell(0, 10, txt=f"Vehículo: {camion}", ln=1)
+    pdf.cell(0, 10, txt=f"Accesos: {accesos_txt}", ln=1)
     
     if len(inventario_txt) > 5:
         pdf.ln(5)
@@ -57,22 +55,30 @@ def generar_pdf(fecha, camion, personal, materiales, inventario_txt, total, desg
     pdf.set_font("Arial", 'B', 12)
     pdf.cell(140, 10, "Descripción", 1)
     pdf.cell(50, 10, "Valor", 1, 1, 'C')
+    
     pdf.set_font("Arial", size=12)
-    pdf.cell(140, 10, f"Transporte ({camion})", 1)
+    pdf.cell(140, 10, f"Transporte Base ({camion})", 1)
     pdf.cell(50, 10, f"${desglose['camion']:.2f}", 1, 1, 'R')
+    
     pdf.cell(140, 10, f"Personal ({personal} ayudantes)", 1)
     pdf.cell(50, 10, f"${desglose['personal']:.2f}", 1, 1, 'R')
+    
+    pdf.cell(140, 10, "Recargo Pisos/Escaleras", 1)
+    pdf.cell(50, 10, f"${desglose['pisos']:.2f}", 1, 1, 'R')
+    
     pdf.cell(140, 10, f"Materiales ({materiales})", 1)
     pdf.cell(50, 10, f"${desglose['materiales']:.2f}", 1, 1, 'R')
+    
     pdf.cell(140, 10, "Tarifa Ciudad", 1)
     pdf.cell(50, 10, "$0.00", 1, 1, 'R')
+    
     pdf.set_font("Arial", 'B', 14)
     pdf.set_text_color(46, 0, 78)
     pdf.cell(140, 15, "TOTAL ESTIMADO", 1)
     pdf.cell(50, 15, f"${total:.2f}", 1, 1, 'R')
     return pdf.output(dest='S').encode('latin-1')
 
-# --- CSS NUCLEAR ---
+# --- CSS BLINDADO (NO TOCAR - EVITA PANTALLAS NEGRAS) ---
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
@@ -94,6 +100,9 @@ st.markdown(f"""
     /* EXPANDER */
     .streamlit-expanderHeader {{ background-color: white !important; color: black !important; border: 1px solid #ccc; }}
     div[data-testid="stExpanderDetails"] {{ background-color: white !important; border: 1px solid #ccc; color: black !important; }}
+    
+    /* CHECKBOX */
+    div[data-baseweb="checkbox"] p {{ color: {COLOR_TEXTO} !important; }}
 
     /* VISUALES */
     .control-panel {{ background-color: {COLOR_CARD_BG}; padding: 20px; border-radius: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; }}
@@ -117,13 +126,7 @@ st.markdown(f"""
     .bg-purple {{ background-color: #F3E5F5; }}
     .action-text {{ font-size: 13px; font-weight: 700; color: #374151; }}
     
-    /* MENSAJE DE ÉXITO */
-    .success-box {{
-        background-color: #ECFDF5; border: 1px solid #10B981; color: #065F46;
-        padding: 15px; border-radius: 10px; margin-top: 10px; font-size: 14px;
-        text-align: center;
-    }}
-
+    .success-box {{ background-color: #ECFDF5; border: 1px solid #10B981; color: #065F46; padding: 15px; border-radius: 10px; margin-top: 10px; font-size: 14px; text-align: center; }}
     .stDownloadButton > button {{ background-color: white !important; color: {COLOR_MORADO} !important; border: 1px solid {COLOR_MORADO} !important; border-radius: 8px !important; padding: 5px 15px !important; }}
     .stDownloadButton > button:hover {{ background-color: {COLOR_MORADO} !important; color: white !important; }}
 
@@ -140,10 +143,11 @@ with col_titulo:
     st.markdown(f"<h1 style='margin-bottom:0; color:{COLOR_MORADO} !important;'>MUDANZA PRIME</h1>", unsafe_allow_html=True)
     st.markdown(f"""<div class="slogan-box">"Movemos lo que más quieres."</div>""", unsafe_allow_html=True)
 
-# --- PANEL INPUTS ---
+# --- PANEL DE CONFIGURACIÓN ---
 st.markdown(f"<div class='control-panel'>", unsafe_allow_html=True)
 st.markdown("### ⚙️ Configura tu Servicio")
-c1, c2, c3 = st.columns(3)
+
+c1, c2, c3, c4 = st.columns(4) # AÑADÍ UNA COLUMNA PARA MATERIALES
 with c1:
     st.markdown("**1. Fecha y Vehículo**")
     fecha_seleccionada = st.date_input("📅 Fecha", datetime.date.today())
@@ -155,15 +159,30 @@ with c1:
     }
     seleccion = st.selectbox("🚛 Camión", list(vehiculos.keys()))
     dato_camion = vehiculos[seleccion]
+
 with c2:
     st.markdown("**2. Personal**")
     personal = st.slider("👷 Ayudantes", 0, 10, 2)
     st.caption("Tarifa: $15 c/u")
+
+# --- NUEVA LÓGICA DE PISOS ---
 with c3:
-    st.markdown("**3. Materiales**")
-    col_mat1, col_mat2 = st.columns(2)
-    with col_mat1: cajas = st.number_input("📦 Cajas", 0, 100, 10)
-    with col_mat2: rollos = st.number_input("🗞️ Rollos", 0, 20, 1)
+    st.markdown("**3. Pisos / Accesos**")
+    st.caption("Escaleras: $10 extra cada 2 pisos")
+    
+    col_salida, col_llegada = st.columns(2)
+    with col_salida:
+        piso_salida = st.selectbox("Salida", ["PB", "1", "2", "3", "4", "5+"], key="piso_sal")
+        asc_salida = st.checkbox("Ascensor S.")
+    with col_llegada:
+        piso_llegada = st.selectbox("Llegada", ["PB", "1", "2", "3", "4", "5+"], key="piso_lleg")
+        asc_llegada = st.checkbox("Ascensor Ll.")
+
+with c4:
+    st.markdown("**4. Materiales**")
+    cajas = st.number_input("📦 Cajas", 0, 100, 10)
+    rollos = st.number_input("🗞️ Rollos", 0, 20, 1)
+
 st.markdown("</div>", unsafe_allow_html=True)
 
 # --- INVENTARIO ---
@@ -209,11 +228,30 @@ with st.expander("📝 LISTA DE INVENTARIO (Clic para desplegar)", expanded=Fals
 
 inventario_final = ", ".join(lista_objetos) if lista_objetos else "No especificado"
 
-# --- CÁLCULOS ---
+# --- CÁLCULOS (INCLUYENDO PISOS) ---
+# Lógica: Cada 2 pisos = $10. (PB y 1 no cobran. 2 y 3 cobran $10. 4 y 5 cobran $20).
+def calcular_recargo_piso(piso, ascensor):
+    if ascensor or piso in ["PB", "1"]:
+        return 0
+    if piso in ["2", "3"]:
+        return 10
+    if piso in ["4", "5+"]:
+        return 20
+    return 0
+
+recargo_salida = calcular_recargo_piso(piso_salida, asc_salida)
+recargo_llegada = calcular_recargo_piso(piso_llegada, asc_llegada)
+precio_pisos = recargo_salida + recargo_llegada
+
 precio_camion = dato_camion["precio"]
 precio_personal = personal * 15
 precio_materiales = (cajas * 1.5) + (rollos * 20)
-total = precio_camion + precio_personal + precio_materiales
+total = precio_camion + precio_personal + precio_materiales + precio_pisos
+
+# Texto de accesos para WhatsApp y PDF
+txt_salida = f"{piso_salida} ({'Ascensor' if asc_salida else 'Escaleras'})"
+txt_llegada = f"{piso_llegada} ({'Ascensor' if asc_llegada else 'Escaleras'})"
+accesos_txt = f"De: {txt_salida} -> A: {txt_llegada}"
 
 # --- DASHBOARD ---
 st.markdown("### 📊 Tu Cotización")
@@ -238,21 +276,27 @@ with k3:
 
 st.write("")
 
-# --- ACCIONES RÁPIDAS ---
+# --- ACCIONES RÁPIDAS (WHATSAPP CONECTADO) ---
 ac1, ac2, ac3 = st.columns(3)
-msg = f"Hola Mudanza Prime. Solicito Reserva: {seleccion} ({fecha_str}). Total: ${total:.2f}. Inv: {inventario_final}. Quedo a la espera de su confirmación."
-lnk = f"https://wa.me/593999999999?text={urllib.parse.quote(msg)}"
+
+# MENSAJE COMPLETO PARA WHATSAPP
+msg = f"""Hola Mudanza Prime. Solicito Reserva:
+🚚 Vehículo: {seleccion}
+📅 Fecha: {fecha_str}
+🏗️ Accesos: {accesos_txt}
+👷 Personal: {personal} ayudantes
+📦 Items: {inventario_final}
+💰 Total Estimado: ${total:.2f}
+
+Quedo a la espera de su confirmación."""
+
+lnk = f"https://wa.me/{NUMERO_WHATSAPP}?text={urllib.parse.quote(msg)}"
 
 def btn(i, t, c, l="#"): return f"""<a href="{l}" target="_blank" style="text-decoration:none;"><div class="action-btn"><div class="icon-box {c}">{i}</div><div class="action-text">{t}</div></div></a>"""
 
 with ac1: 
     st.markdown(btn("📲", "Reservar WhatsApp", "bg-green", lnk), unsafe_allow_html=True)
-    # MENSAJE DE NOTIFICACIÓN DEBAJO DEL BOTÓN
-    st.markdown("""
-    <div class="success-box">
-    ✅ Al dar clic, se enviarán tus datos para revisión. Un asesor te contactará pronto.
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown("""<div class="success-box">✅ Envía los datos directamente a nuestro sistema.</div>""", unsafe_allow_html=True)
 
 with ac2: st.markdown(btn("🛡️", "Seguros y Tips", "bg-purple"), unsafe_allow_html=True)
 with ac3: st.markdown(btn("⭐", "Calificanos", "bg-blue"), unsafe_allow_html=True)
@@ -268,6 +312,9 @@ html_desglose = f"""
     </div>
     <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee;">
         <span style="color:#666;">👷 {personal} Cargadores</span><span style="font-weight:bold; color:{COLOR_TEXTO};">${precio_personal:.2f}</span>
+    </div>
+    <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee;">
+        <span style="color:#666;">🏢 Accesos / Escaleras</span><span style="font-weight:bold; color:{COLOR_TEXTO};">${precio_pisos:.2f}</span>
     </div>
     <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee;">
         <span style="color:#666;">📦 Materiales</span><span style="font-weight:bold; color:{COLOR_TEXTO};">${precio_materiales:.2f}</span>
@@ -290,9 +337,10 @@ with col_pdf_left:
         camion=seleccion,
         personal=personal,
         materiales=f"{cajas} cajas, {rollos} rollos",
+        accesos_txt=accesos_txt,
         inventario_txt=inventario_final,
         total=total,
-        desglose={'camion': precio_camion, 'personal': precio_personal, 'materiales': precio_materiales}
+        desglose={'camion': precio_camion, 'personal': precio_personal, 'materiales': precio_materiales, 'pisos': precio_pisos}
     )
     st.download_button(
         label="📄 Descargar Cotización PDF",
