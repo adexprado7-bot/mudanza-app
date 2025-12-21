@@ -4,7 +4,6 @@ import urllib.parse
 from fpdf import FPDF
 
 # --- CONFIGURACIÓN DE PÁGINA ---
-# Mantenemos el título en la pestaña del navegador, pero no en la app visible
 st.set_page_config(page_title="Mudanza Prime | Cotizador", page_icon="🚚", layout="wide")
 
 # --- COLORES ---
@@ -19,9 +18,11 @@ NUMERO_WHATSAPP = "593998994518"
 def clean_text(text):
     return text.encode('latin-1', 'ignore').decode('latin-1')
 
-# --- CLASE PDF (El nombre sigue aquí para el documento oficial) ---
+# --- CLASE PDF ---
 class PDF(FPDF):
     def header(self):
+        # Intentamos poner el logo en el PDF también si es posible
+        # self.image('logo.png', 10, 8, 33) 
         self.set_font('Arial', 'B', 20)
         self.set_text_color(46, 0, 78) 
         self.cell(0, 10, clean_text('MUDANZA PRIME'), 0, 1, 'C')
@@ -74,13 +75,32 @@ def generar_pdf(fecha, camion, personal, materiales, accesos_txt, inventario_txt
     pdf.cell(50, 15, f"${total:.2f}", 1, 1, 'R')
     return pdf.output(dest='S').encode('latin-1', 'ignore')
 
-# --- CSS BLINDADO ---
+# --- CSS BLINDADO + ESTILO LOGO PNG ---
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
     .stApp {{ background-color: {FONDO_APP}; font-family: 'Montserrat', sans-serif; }}
     h1, h2, h3, h4, h5, p, span, div, label, li {{ color: {COLOR_TEXTO} !important; }}
     
+    /* --- ESTILO LOGO FLOTANTE (PNG) --- */
+    .logo-container {{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 10px 0 40px 0; /* Espaciado */
+    }}
+    .logo-container img {{
+        max-width: 300px; /* Tamaño ideal */
+        height: auto;
+        /* Quitamos box-shadow y border-radius para que el PNG transparente luzca bien */
+        filter: drop-shadow(0px 5px 10px rgba(0,0,0,0.1)); /* Sombra que respeta la forma del PNG */
+        transition: transform 0.3s ease;
+    }}
+    .logo-container img:hover {{
+        transform: scale(1.05); /* Efecto zoom suave */
+    }}
+    /* --------------------------------------- */
+
     div[data-baseweb="input"], div[data-baseweb="base-input"], div[data-baseweb="select"] {{
         background-color: white !important; border: 1px solid #ccc !important; color: black !important;
     }}
@@ -123,18 +143,13 @@ st.markdown(f"""
     </style>
 """, unsafe_allow_html=True)
 
-# --- CABECERA CLEAN (SOLO LOGO CENTRADO) ---
-# Usamos columnas para centrar el logo. Ajusta los números [3, 4, 3] si quieres el logo más grande o más chico.
-c_spacer_left, c_logo_center, c_spacer_right = st.columns([3, 4, 3])
+# --- CABECERA CLEAN (LOGO PNG) ---
+st.markdown("""
+    <div class="logo-container">
+        <img src="logo.png" alt="Mudanza Prime">
+    </div>
+""", unsafe_allow_html=True)
 
-with c_logo_center:
-    # Muestra el logo centrado y un poco más grande. Si falla, muestra un emoji gigante.
-    try: 
-        st.image("logo.jpg", use_container_width=True)
-    except: 
-        st.markdown("<h1 style='text-align: center; font-size: 80px;'>🚚</h1>", unsafe_allow_html=True)
-
-st.write("") # Un poco de espacio antes del panel
 
 # --- PANEL DE CONFIGURACIÓN ---
 st.markdown(f"<div class='control-panel'>", unsafe_allow_html=True)
