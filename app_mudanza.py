@@ -5,14 +5,11 @@ import urllib.parse
 # --- CONFIGURACIÓN ---
 st.set_page_config(page_title="Mudanza Prime | Panel", page_icon="🚚", layout="wide")
 
-# --- CABECERA SUPERIOR (LOGO Y MODO OSCURO) ---
+# --- CABECERA SUPERIOR ---
 col_header_1, col_header_2 = st.columns([4, 1])
-
 with col_header_1:
     st.markdown("## 🚚 MUDANZA PRIME")
-
 with col_header_2:
-    # EL INTERRUPTOR AHORA ESTÁ AQUÍ, BIEN VISIBLE
     modo_oscuro = st.toggle("🌙 Modo Oscuro", value=False)
 
 # --- COLORES ---
@@ -30,27 +27,21 @@ else:
     COLOR_CARD_BG = "#FFFFFF"
     COLOR_INPUT_BG = "#FFFFFF"
 
-# --- CSS (ESTILO BANCO + CONTROLES VISIBLES) ---
+# --- CSS (ESTILO BANCO) ---
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
     
     .stApp {{ background-color: {FONDO_APP}; font-family: 'Montserrat', sans-serif; }}
-    
-    /* Textos */
     h1, h2, h3, h4, p, span, div, label {{ color: {COLOR_TEXTO} !important; }}
     
-    /* PANELES DE CONTROL (INPUTS) */
+    /* PANELES */
     .control-panel {{
-        background-color: {COLOR_CARD_BG};
-        padding: 20px;
-        border-radius: 15px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        margin-bottom: 20px;
-        border: 1px solid rgba(0,0,0,0.05);
+        background-color: {COLOR_CARD_BG}; padding: 20px; border-radius: 15px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid rgba(0,0,0,0.05);
     }}
     
-    /* TARJETAS HERO (BANCO) */
+    /* TARJETAS HERO */
     .hero-card {{
         border-radius: 20px; padding: 25px; color: white; height: 160px;
         display: flex; flex-direction: column; justify-content: space-between;
@@ -67,14 +58,12 @@ st.markdown(f"""
     .card-label {{ font-size: 12px; font-weight: 700; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; }}
     .card-amount {{ font-size: 32px; font-weight: 800; margin-top: 5px; }}
 
-    /* Inputs Personalizados */
+    /* Inputs */
     .stDateInput input, .stSelectbox div[data-baseweb="select"], .stNumberInput input {{
-        background-color: {COLOR_INPUT_BG} !important;
-        color: {COLOR_TEXTO} !important;
-        border-radius: 8px;
+        background-color: {COLOR_INPUT_BG} !important; color: {COLOR_TEXTO} !important; border-radius: 8px;
     }}
     
-    /* BOTONES DE ACCIÓN */
+    /* BOTONES */
     .action-btn {{
         background-color: {COLOR_CARD_BG}; border-radius: 16px; padding: 15px; text-align: center;
         box-shadow: 0 4px 6px rgba(0,0,0,0.02); cursor: pointer; transition: all 0.2s; height: 100%;
@@ -93,15 +82,12 @@ st.markdown(f"""
     .bg-purple {{ background-color: #F3E5F5; }}
     .action-text {{ font-size: 13px; font-weight: 700; color: #374151; }}
 
-    /* OCULTAR BARRA SUPERIOR STREAMLIT */
     header {{ visibility: hidden; }}
     footer {{ visibility: hidden; }}
     </style>
 """, unsafe_allow_html=True)
 
-# --- PANEL DE CONTROL PRINCIPAL (INPUTS) ---
-# Aquí es donde el usuario interactúa ahora, en lugar de la barra lateral
-
+# --- PANEL DE CONTROL ---
 st.markdown(f"<div class='control-panel'>", unsafe_allow_html=True)
 st.markdown("### ⚙️ Configura tu Servicio")
 
@@ -109,10 +95,8 @@ col_inp1, col_inp2, col_inp3 = st.columns(3)
 
 with col_inp1:
     st.markdown("**1. Fecha y Vehículo**")
-    # CALENDARIO DESPLEGABLE
     fecha_seleccionada = st.date_input("📅 Fecha de Mudanza", datetime.date.today())
     
-    # SELECTOR DE CAMIÓN (Desplegable grande)
     vehiculos = {
         "Furgoneta (Pequeña)": {"precio": 30, "img": "🚐"},
         "Camión 2 Toneladas": {"precio": 40, "img": "🚛"},
@@ -123,10 +107,10 @@ with col_inp1:
     dato_camion = vehiculos[seleccion]
 
 with col_inp2:
-    st.markdown("**2. Distancia y Ayuda**")
-    distancia = st.number_input("📍 Distancia (km)", min_value=1, value=10)
-    # SLIDER DE CARGADORES
-    personal = st.slider("👷 Cargadores Necesarios", 0, 10, 2)
+    st.markdown("**2. Personal de Carga**")
+    # Aumenté el rango del slider y lo hice más prominente
+    personal = st.slider("👷 Número de Ayudantes", 0, 10, 2)
+    st.caption(f"Costo por ayudante: $15.00")
 
 with col_inp3:
     st.markdown("**3. Materiales**")
@@ -138,29 +122,27 @@ with col_inp3:
 
 st.markdown("</div>", unsafe_allow_html=True)
 
-# --- CÁLCULOS ---
+# --- CÁLCULOS (SIN DISTANCIA) ---
 costo_camion = dato_camion["precio"]
 costo_personal = personal * 15
 costo_materiales = (cajas * 1.5) + (rollos * 20)
-costo_distancia = distancia * 1.0
-total = costo_camion + costo_personal + costo_materiales + costo_distancia
+# La distancia ya no se suma
+total = costo_camion + costo_personal + costo_materiales
 
-# --- DASHBOARD VISUAL (RESULTADOS) ---
-st.markdown("### 📊 Tu Cotización en Tiempo Real")
+# --- DASHBOARD VISUAL ---
+st.markdown("### 📊 Tu Cotización (Tarifa Ciudad)")
 
 # 1. TARJETAS
 c1, c2, c3 = st.columns(3)
 
 with c1:
-    # Tarjeta Precio
     st.markdown(f"""
     <div class="hero-card card-purple">
         <div><div class="card-label">PRESUPUESTO ESTIMADO</div><div class="card-amount">${total:.2f}</div></div>
-        <div style="display:flex; justify-content:space-between; align-items:end;"><div style="font-size:12px; opacity:0.8;">IMPUESTOS INCLUIDOS</div><div style="font-size:24px;">💳</div></div>
+        <div style="display:flex; justify-content:space-between; align-items:end;"><div style="font-size:12px; opacity:0.8;">TARIFA FIJA CIUDAD</div><div style="font-size:24px;">💳</div></div>
     </div>""", unsafe_allow_html=True)
 
 with c2:
-    # Tarjeta Vehículo
     st.markdown(f"""
     <div class="hero-card card-yellow">
         <div><div class="card-label">VEHÍCULO SELECCIONADO</div><div class="card-amount">{dato_camion['img']}</div><div style="font-weight:700; color:{COLOR_MORADO};">{seleccion}</div></div>
@@ -168,7 +150,6 @@ with c2:
     </div>""", unsafe_allow_html=True)
 
 with c3:
-    # Tarjeta Fecha
     fecha_str = fecha_seleccionada.strftime("%d %B %Y")
     st.markdown(f"""
     <div class="hero-card" style="background-color:{COLOR_CARD_BG}; border: 1px solid #ddd;">
@@ -179,9 +160,8 @@ with c3:
 st.write("")
 
 # 2. ACCIONES RÁPIDAS
-st.markdown("##### ¿Qué deseas hacer?")
 ca, cb, cc, cd = st.columns(4)
-msg = f"Hola Mudanza Prime. Quiero reservar: {seleccion} para el {fecha_str}. Total: ${total:.2f}"
+msg = f"Hola Mudanza Prime. Quiero reservar: {seleccion} para el {fecha_str}. Total: ${total:.2f} (Tarifa Fija Ciudad)"
 lnk = f"https://wa.me/593999999999?text={urllib.parse.quote(msg)}"
 
 def btn(i, t, c, l="#"): return f"""<a href="{l}" target="_blank" style="text-decoration:none;"><div class="action-btn"><div class="icon-box {c}">{i}</div><div class="action-text">{t}</div></div></a>"""
@@ -194,13 +174,12 @@ with cd: st.markdown(btn("⭐", "Calificanos", "bg-blue"), unsafe_allow_html=Tru
 st.write("")
 st.write("")
 
-# 3. LISTA DE MOVIMIENTOS (DETALLE)
-# HTML Limpio sin sangría para evitar el error de caja negra
+# 3. LISTA DE MOVIMIENTOS
 html_desglose = f"""
 <div style="background-color:{COLOR_CARD_BG}; padding:20px; border-radius:15px; box-shadow:0 4px 6px rgba(0,0,0,0.02);">
     <h4 style="margin-bottom:20px; color:{COLOR_TEXTO};">🧾 Desglose de Servicios</h4>
     <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee;">
-        <span style="color:#666;">🚛 {seleccion}</span>
+        <span style="color:#666;">🚛 {seleccion} (Base)</span>
         <span style="font-weight:bold; color:{COLOR_TEXTO};">${costo_camion:.2f}</span>
     </div>
     <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee;">
@@ -212,8 +191,8 @@ html_desglose = f"""
         <span style="font-weight:bold; color:{COLOR_TEXTO};">${costo_materiales:.2f}</span>
     </div>
     <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee;">
-        <span style="color:#666;">📍 Distancia ({distancia} km)</span>
-        <span style="font-weight:bold; color:{COLOR_TEXTO};">${costo_distancia:.2f}</span>
+        <span style="color:#666;">📍 Cobertura / Distancia</span>
+        <span style="font-weight:bold; color:#2E7D32;">Tarifa Plana (Incluida)</span>
     </div>
     <div style="display:flex; justify-content:space-between; padding:15px 0; margin-top:10px;">
         <span style="font-weight:bold; font-size:18px; color:{COLOR_MORADO};">TOTAL FINAL</span>
@@ -221,5 +200,4 @@ html_desglose = f"""
     </div>
 </div>
 """
-
 st.markdown(html_desglose, unsafe_allow_html=True)
