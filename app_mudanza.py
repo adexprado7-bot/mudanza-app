@@ -16,14 +16,14 @@ COLOR_TEXTO = "#1F2937"
 COLOR_CARD_BG = "#FFFFFF"
 NUMERO_WHATSAPP = "593998994518"
 
-# --- FUNCIÓN PARA LEER IMAGEN Y CONVERTIR A BASE64 (SOLUCIÓN DEL ERROR) ---
+# --- FUNCIÓN PARA LEER IMAGEN Y CONVERTIR A BASE64 ---
 def get_image_base64(path):
     try:
         with open(path, "rb") as image_file:
             encoded = base64.b64encode(image_file.read()).decode()
         return f"data:image/png;base64,{encoded}"
     except Exception as e:
-        return None # Si falla, devuelve None
+        return None
 
 # --- FUNCIÓN LIMPIEZA TEXTO ---
 def clean_text(text):
@@ -32,19 +32,15 @@ def clean_text(text):
 # --- CLASE PDF ---
 class PDF(FPDF):
     def header(self):
-        # Intentamos poner el logo en el PDF (FPDF sí lee archivos locales directo)
         if os.path.exists("logo.png"):
             try:
-                # Ajusta la posición (x, y) y el ancho (w) según necesites
                 self.image('logo.png', x=80, y=10, w=50) 
-                self.ln(25) # Bajamos el cursor para no escribir encima del logo
+                self.ln(25) 
             except:
-                pass # Si falla el logo en PDF, no bloqueamos la app
+                pass 
         
-        # Si no hay logo, o debajo del logo, ponemos el texto
         self.set_font('Arial', 'B', 16)
         self.set_text_color(46, 0, 78) 
-        # self.cell(0, 10, clean_text('MUDANZA PRIME'), 0, 1, 'C') # Opcional si ya sale el logo
         self.set_font('Arial', 'I', 10)
         self.cell(0, 5, clean_text('Detalle de Solicitud de Servicio'), 0, 1, 'C')
         self.ln(10)
@@ -102,12 +98,15 @@ st.markdown(f"""
     .stApp {{ background-color: {FONDO_APP}; font-family: 'Montserrat', sans-serif; }}
     h1, h2, h3, h4, h5, p, span, div, label, li {{ color: {COLOR_TEXTO} !important; }}
     
-    /* --- ESTILO LOGO FLOTANTE --- */
+    /* --- ESTILO LOGO FLOTANTE CON LÍNEA DIVISORIA --- */
     .logo-container {{
         display: flex;
         justify-content: center;
         align-items: center;
-        padding: 10px 0 40px 0;
+        padding: 20px 0 20px 0; /* Menos espacio abajo */
+        border-bottom: 3px solid {COLOR_MORADO}; /* La línea morada */
+        margin-bottom: 25px; /* Espacio después de la línea */
+        width: 100%;
     }}
     .logo-container img {{
         max-width: 300px;
@@ -162,19 +161,21 @@ st.markdown(f"""
     </style>
 """, unsafe_allow_html=True)
 
-# --- CABECERA (LOGICA BASE64 PARA QUE NO FALLE) ---
+# --- CABECERA (LOGICA BASE64 + LÍNEA DIVISORIA) ---
 img_base64 = get_image_base64("logo.png")
 
 if img_base64:
-    # Si encuentra el logo, lo muestra bonito
     st.markdown(f"""
         <div class="logo-container">
             <img src="{img_base64}" alt="Mudanza Prime">
         </div>
     """, unsafe_allow_html=True)
 else:
-    # Si NO encuentra el logo, muestra un título elegante en texto (Plan B)
-    st.markdown(f"<h1 style='text-align: center; color: {COLOR_MORADO}; font-size: 50px;'>MUDANZA PRIME</h1>", unsafe_allow_html=True)
+    st.markdown(f"""
+        <div class="logo-container" style="padding-bottom: 20px;">
+            <h1 style='text-align: center; color: {COLOR_MORADO}; font-size: 50px; margin-bottom:0;'>MUDANZA PRIME</h1>
+        </div>
+    """, unsafe_allow_html=True)
 
 
 # --- PANEL DE CONFIGURACIÓN ---
