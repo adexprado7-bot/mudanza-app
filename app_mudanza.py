@@ -16,13 +16,13 @@ COLOR_TEXTO = "#1F2937"
 COLOR_CARD_BG = "#FFFFFF"
 NUMERO_WHATSAPP = "593998994518"
 
-# --- FUNCIÓN PARA LEER IMAGEN Y CONVERTIR A BASE64 ---
+# --- FUNCIÓN BASE64 ---
 def get_image_base64(path):
     try:
         with open(path, "rb") as image_file:
             encoded = base64.b64encode(image_file.read()).decode()
         return f"data:image/png;base64,{encoded}"
-    except Exception as e:
+    except Exception:
         return None
 
 # --- FUNCIÓN LIMPIEZA TEXTO ---
@@ -36,9 +36,7 @@ class PDF(FPDF):
             try:
                 self.image('logo.png', x=80, y=10, w=50) 
                 self.ln(25) 
-            except:
-                pass 
-        
+            except: pass
         self.set_font('Arial', 'B', 16)
         self.set_text_color(46, 0, 78) 
         self.set_font('Arial', 'I', 10)
@@ -49,7 +47,7 @@ class PDF(FPDF):
         self.set_y(-15)
         self.set_font('Arial', 'I', 8)
         self.set_text_color(128)
-        self.cell(0, 10, clean_text('Mudanza Prime - Guayaquil | Cotizacion sujeta a disponibilidad'), 0, 0, 'C')
+        self.cell(0, 10, clean_text('Mudanza Prime - Guayaquil | Precio sujeto a confirmacion final'), 0, 0, 'C')
 
 def generar_pdf(fecha, camion, personal, materiales, accesos_txt, inventario_txt, total, pago_seleccionado, desglose):
     pdf = PDF()
@@ -59,11 +57,12 @@ def generar_pdf(fecha, camion, personal, materiales, accesos_txt, inventario_txt
     pdf.cell(0, 10, txt=clean_text(f"Fecha Emision: {datetime.date.today()}"), ln=1, fill=True)
     pdf.ln(5)
     pdf.set_text_color(0, 0, 0)
-    pdf.cell(0, 10, txt=clean_text(f"Fecha Solicitada: {fecha}"), ln=1)
+    pdf.cell(0, 10, txt=clean_text(f"Fecha Servicio: {fecha}"), ln=1)
     nombre_camion_limpio = camion.split("-")[0] 
     pdf.cell(0, 10, txt=clean_text(f"Vehiculo: {nombre_camion_limpio}"), ln=1)
     pdf.cell(0, 10, txt=clean_text(f"Accesos: {accesos_txt}"), ln=1)
-    pdf.cell(0, 10, txt=clean_text(f"Metodo de Pago Preferido: {pago_seleccionado}"), ln=1)
+    pdf.cell(0, 10, txt=clean_text(f"Pago Preferido: {pago_seleccionado}"), ln=1)
+    
     if len(inventario_txt) > 5:
         pdf.ln(5)
         pdf.set_font("Arial", 'B', 10)
@@ -71,6 +70,7 @@ def generar_pdf(fecha, camion, personal, materiales, accesos_txt, inventario_txt
         pdf.set_font("Arial", size=9)
         pdf.multi_cell(0, 6, txt=clean_text(inventario_txt))
         pdf.ln(5)
+        
     pdf.set_font("Arial", 'B', 12)
     pdf.cell(140, 10, clean_text("Descripcion"), 1)
     pdf.cell(50, 10, clean_text("Valor"), 1, 1, 'C')
@@ -85,39 +85,33 @@ def generar_pdf(fecha, camion, personal, materiales, accesos_txt, inventario_txt
     pdf.cell(50, 10, f"${desglose['materiales']:.2f}", 1, 1, 'R')
     pdf.cell(140, 10, clean_text("Tarifa Ciudad"), 1)
     pdf.cell(50, 10, "$0.00", 1, 1, 'R')
+
     pdf.set_font("Arial", 'B', 14)
     pdf.set_text_color(46, 0, 78)
     pdf.cell(140, 15, clean_text("TOTAL ESTIMADO"), 1)
     pdf.cell(50, 15, f"${total:.2f}", 1, 1, 'R')
     return pdf.output(dest='S').encode('latin-1', 'ignore')
 
-# --- CSS BLINDADO ---
+# --- CSS ---
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
     .stApp {{ background-color: {FONDO_APP}; font-family: 'Montserrat', sans-serif; }}
     h1, h2, h3, h4, h5, p, span, div, label, li {{ color: {COLOR_TEXTO} !important; }}
     
-    /* --- ESTILO LOGO FLOTANTE CON LÍNEA DIVISORIA --- */
     .logo-container {{
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 20px 0 20px 0; /* Menos espacio abajo */
-        border-bottom: 3px solid {COLOR_MORADO}; /* La línea morada */
-        margin-bottom: 25px; /* Espacio después de la línea */
+        display: flex; justify-content: center; align-items: center;
+        padding: 20px 0 20px 0;
+        border-bottom: 3px solid {COLOR_MORADO};
+        margin-bottom: 25px;
         width: 100%;
     }}
     .logo-container img {{
-        max-width: 300px;
-        height: auto;
+        max-width: 300px; height: auto;
         filter: drop-shadow(0px 5px 10px rgba(0,0,0,0.1));
         transition: transform 0.3s ease;
     }}
-    .logo-container img:hover {{
-        transform: scale(1.05);
-    }}
-    /* -------------------------- */
+    .logo-container img:hover {{ transform: scale(1.05); }}
 
     div[data-baseweb="input"], div[data-baseweb="base-input"], div[data-baseweb="select"] {{
         background-color: white !important; border: 1px solid #ccc !important; color: black !important;
@@ -128,22 +122,22 @@ st.markdown(f"""
     ul[data-testid="stSelectboxVirtualDropdown"] {{ background-color: white !important; }}
     li[role="option"] {{ background-color: white !important; color: black !important; }}
     li[role="option"]:hover {{ background-color: {COLOR_AMARILLO} !important; color: black !important; }}
-    
     div[role="radiogroup"] label {{ background-color: white !important; border: 1px solid #ddd; padding: 10px; border-radius: 8px; margin-right: 10px; }}
     
     .tip-box {{ padding: 10px; border-bottom: 1px solid #eee; font-size: 14px; }}
     .review-card {{ background-color: white; padding: 15px; border-radius: 10px; margin-bottom: 10px; border-left: 4px solid {COLOR_AMARILLO}; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }}
-    
     .control-panel {{ background-color: {COLOR_CARD_BG}; padding: 20px; border-radius: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; }}
-    
     .hero-card {{ border-radius: 20px; padding: 25px; color: white; height: 160px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 10px 25px rgba(0,0,0,0.08); transition: transform 0.2s; }}
-    .hero-card:hover {{ transform: translateY(-5px); }}
     .card-purple {{ background: linear-gradient(135deg, {COLOR_MORADO} 0%, #4a148c 100%); }}
     .card-purple div {{ color: white !important; }}
     .card-yellow {{ background: linear-gradient(135deg, {COLOR_AMARILLO} 0%, #ffca28 100%); }}
     .card-yellow div {{ color: {COLOR_MORADO} !important; }}
     .card-label {{ font-size: 12px; font-weight: 700; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; }}
     .card-amount {{ font-size: 32px; font-weight: 800; margin-top: 5px; }}
+    
+    .vehicle-preview {{
+        width: 100%; border-radius: 10px; margin-top: 10px; border: 2px solid #eee;
+    }}
 
     .action-btn {{ background-color: {COLOR_CARD_BG}; border-radius: 16px; padding: 15px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.02); transition: all 0.2s; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid rgba(0,0,0,0.05); text-decoration: none; }}
     .action-btn:hover {{ transform: scale(1.03); border-color: {COLOR_AMARILLO}; }}
@@ -157,44 +151,46 @@ st.markdown(f"""
     .stDownloadButton > button {{ background-color: white !important; color: {COLOR_MORADO} !important; border: 1px solid {COLOR_MORADO} !important; border-radius: 8px !important; padding: 5px 15px !important; width: 100%; }}
     .stDownloadButton > button:hover {{ background-color: {COLOR_MORADO} !important; color: white !important; }}
 
+    .footer-custom {{ text-align: center; font-size: 12px; color: #999; padding: 30px 0; border-top: 1px solid #eee; margin-top: 40px; }}
+
     header {{ visibility: hidden; }} footer {{ visibility: hidden; }}
     </style>
 """, unsafe_allow_html=True)
 
-# --- CABECERA (LOGICA BASE64 + LÍNEA DIVISORIA) ---
+# --- HEADER LOGO ---
 img_base64 = get_image_base64("logo.png")
-
 if img_base64:
-    st.markdown(f"""
-        <div class="logo-container">
-            <img src="{img_base64}" alt="Mudanza Prime">
-        </div>
-    """, unsafe_allow_html=True)
+    st.markdown(f"""<div class="logo-container"><img src="{img_base64}" alt="Mudanza Prime"></div>""", unsafe_allow_html=True)
 else:
-    st.markdown(f"""
-        <div class="logo-container" style="padding-bottom: 20px;">
-            <h1 style='text-align: center; color: {COLOR_MORADO}; font-size: 50px; margin-bottom:0;'>MUDANZA PRIME</h1>
-        </div>
-    """, unsafe_allow_html=True)
+    st.markdown(f"""<div class="logo-container"><h1 style='text-align: center; color: {COLOR_MORADO}; font-size: 50px; margin-bottom:0;'>MUDANZA PRIME</h1></div>""", unsafe_allow_html=True)
 
-
-# --- PANEL DE CONFIGURACIÓN ---
+# --- CONFIGURACIÓN ---
 st.markdown(f"<div class='control-panel'>", unsafe_allow_html=True)
 st.markdown("### ⚙️ Configura tu Servicio")
 
 c1, c2, c3, c4 = st.columns(4) 
 with c1:
     st.markdown("**1. Fecha y Vehículo**")
-    fecha_seleccionada = st.date_input("📅 Fecha", datetime.date.today())
+    fecha_seleccionada = st.date_input("📅 Fecha", datetime.date.today(), min_value=datetime.date.today())
+    
+    # DICCIONARIO CON IMÁGENES (URLs de ejemplo)
+    # NOTA: Puedes reemplazar estas URLs con nombres de archivos locales (ej: "camion1.jpg") si los subes a la carpeta.
     vehiculos = {
-        "👉 Seleccione un Vehículo": {"precio": 0, "img": "❓"},
-        "Furgoneta (Pequeña) - $30": {"precio": 30, "img": "🚐"},
-        "Camión 2 Toneladas - $40": {"precio": 40, "img": "🚛"},
-        "Camión 3.5 Toneladas - $50": {"precio": 50, "img": "🚚"},
-        "Camión 6 Toneladas - $60": {"precio": 60, "img": "🚛🚛"}
+        "👉 Seleccione un Vehículo": {"precio": 0, "img": "❓", "foto": "https://cdn-icons-png.flaticon.com/512/7542/7542676.png"},
+        "Furgoneta (Pequeña) - $30": {"precio": 30, "img": "🚐", "foto": "https://img.freepik.com/foto-gratis/furgoneta-reparto-blanco-sobre-fondo-blanco_123583-118.jpg"},
+        "Camión 2 Toneladas - $40": {"precio": 40, "img": "🚛", "foto": "https://sc04.alicdn.com/kf/H856d4701297e4125866164223f03b290E.jpg"},
+        "Camión 3.5 Toneladas - $50": {"precio": 50, "img": "🚚", "foto": "https://img.freepik.com/foto-gratis/camion-blanco-aislado-sobre-blanco_123583-128.jpg"},
+        "Camión 6 Toneladas - $60": {"precio": 60, "img": "🚛🚛", "foto": "https://img.freepik.com/foto-gratis/camion-carga-blanco_1112-588.jpg"}
     }
     seleccion = st.selectbox("🚛 Camión", list(vehiculos.keys()))
     dato_camion = vehiculos[seleccion]
+    
+    # MOSTRAR FOTO DEL CAMIÓN
+    st.markdown(f"""
+        <div style="text-align:center;">
+            <img src="{dato_camion['foto']}" class="vehicle-preview" style="max-height:100px; object-fit:contain;">
+        </div>
+    """, unsafe_allow_html=True)
 
 with c2:
     st.markdown("**2. Personal**")
@@ -319,7 +315,7 @@ with k3:
 
 st.write("")
 
-# --- DESGLOSE + TIPS ---
+# --- DESGLOSE + FAQ ---
 c_desglose, c_extra = st.columns([3, 2])
 
 with c_desglose:
@@ -353,24 +349,29 @@ with c_desglose:
     st.markdown("#### 💳 Forma de Pago Preferida:")
     metodo_pago = st.radio("Selecciona una opción:", ["💵 Efectivo", "🏦 Transferencia (Pichincha/Guayaquil)", "📱 Deuna!"], horizontal=False, label_visibility="collapsed")
     
-    pdf_bytes = generar_pdf(
-        fecha=fecha_str,
-        camion=seleccion,
-        personal=personal,
-        materiales=f"{cajas} cajas, {rollos} rollos",
-        accesos_txt=accesos_txt,
-        inventario_txt=inventario_final,
-        total=total,
-        pago_seleccionado=metodo_pago,
-        desglose={'camion': precio_camion, 'personal': precio_personal, 'materiales': precio_materiales, 'pisos': precio_pisos}
-    )
-    st.download_button(
-        label="📄 Descargar Cotización (PDF)",
-        data=pdf_bytes,
-        file_name="Cotizacion_Mudanza.pdf",
-        mime="application/pdf",
-        use_container_width=True
-    )
+    terminos = st.checkbox("✅ Acepto que el valor es estimado y sujeto a disponibilidad.")
+
+    if terminos and total > 0:
+        pdf_bytes = generar_pdf(
+            fecha=fecha_str,
+            camion=seleccion,
+            personal=personal,
+            materiales=f"{cajas} cajas, {rollos} rollos",
+            accesos_txt=accesos_txt,
+            inventario_txt=inventario_final,
+            total=total,
+            pago_seleccionado=metodo_pago,
+            desglose={'camion': precio_camion, 'personal': precio_personal, 'materiales': precio_materiales, 'pisos': precio_pisos}
+        )
+        st.download_button(
+            label="📄 Descargar Cotización (PDF)",
+            data=pdf_bytes,
+            file_name="Cotizacion_Mudanza.pdf",
+            mime="application/pdf",
+            use_container_width=True
+        )
+    elif total == 0:
+        st.warning("👆 Selecciona un vehículo para habilitar la descarga.")
 
 with c_extra:
     msg = f"""Hola Mudanza Prime. Solicito Reserva:
@@ -385,25 +386,24 @@ with c_extra:
 Quedo a la espera de su confirmación."""
     lnk = f"https://wa.me/{NUMERO_WHATSAPP}?text={urllib.parse.quote(msg)}"
     
-    st.markdown(f"""<a href="{lnk}" target="_blank" style="text-decoration:none;"><div class="action-btn" style="background-color:#E8F5E9; border-color:#4CAF50;"><div class="icon-box bg-green">📲</div><div class="action-text">CONFIRMAR RESERVA (WhatsApp)</div></div></a>""", unsafe_allow_html=True)
-    st.markdown("""<div class="success-box">✅ Envía los datos directamente a nuestro sistema.</div>""", unsafe_allow_html=True)
+    if terminos and total > 0:
+        st.markdown(f"""<a href="{lnk}" target="_blank" style="text-decoration:none;"><div class="action-btn" style="background-color:#E8F5E9; border-color:#4CAF50;"><div class="icon-box bg-green">📲</div><div class="action-text">CONFIRMAR RESERVA (WhatsApp)</div></div></a>""", unsafe_allow_html=True)
+        st.markdown("""<div class="success-box">✅ Envía los datos directamente a nuestro sistema.</div>""", unsafe_allow_html=True)
+    else:
+        st.info("Acepta los términos y selecciona vehículo para reservar.")
 
     st.write("")
     
-    with st.expander("💡 10 Tips de Mudanza", expanded=False):
-        st.markdown("""
-        <div class="tip-box">1. 📅 Reserva 3 días antes.</div>
-        <div class="tip-box">2. 🧊 Descongela la refri 24h antes.</div>
-        <div class="tip-box">3. 🏷️ Etiqueta las cajas por cuarto.</div>
-        <div class="tip-box">4. 💼 Joyas y dinero llévalos tú.</div>
-        <div class="tip-box">5. 📦 Libros en cajas pequeñas.</div>
-        <div class="tip-box">6. 📺 Toma fotos a los cables de TV.</div>
-        <div class="tip-box">7. 👗 Usa ropa para proteger vidrio.</div>
-        <div class="tip-box">8. 🐕 Cuida a tus mascotas ese día.</div>
-        <div class="tip-box">9. 📏 Mide puertas y pasillos.</div>
-        <div class="tip-box">10. 🎒 Prepara maleta de primera noche.</div>
-        """, unsafe_allow_html=True)
-
+    # --- NUEVA SECCIÓN FAQ ---
+    st.markdown("##### ❓ Preguntas Frecuentes")
+    with st.expander("¿Desarman y arman camas?"):
+        st.write("Sí, nuestro personal está capacitado para desmontar y armar camas estándar sin costo adicional. Armarios complejos pueden requerir visita previa.")
+    with st.expander("¿Suben muebles por balcones?"):
+        st.write("El servicio estándar es por escaleras o ascensor. Maniobras por balcones ("volados") tienen un costo adicional y riesgo evaluado.")
+    with st.expander("¿Qué incluye el material?"):
+        st.write("Cajas para vajilla/ropa y rollos para proteger muebles. Nosotros nos encargamos de embalar lo grande.")
+    
+    st.write("")
     st.markdown("##### ⭐ Opiniones de Clientes")
     st.markdown("""
     <div class="review-card">
@@ -419,7 +419,14 @@ Quedo a la espera de su confirmación."""
     """, unsafe_allow_html=True)
     
     st.write("---")
-    st.caption("Déjanos tu opinión:")
-    calificacion = st.slider("Puntuación", 1, 5, 5)
+    calificacion = st.slider("Califica tu experiencia:", 1, 5, 5)
     if st.button("Enviar Calificación"):
         st.toast("¡Gracias por tu opinión! ⭐")
+
+# --- FOOTER ---
+st.markdown("""
+    <div class="footer-custom">
+        © 2025 Mudanza Prime Guayaquil | Movemos lo que más quieres.<br>
+        Contacto: hola@mudanzaprime.com | +593 99 899 4518
+    </div>
+""", unsafe_allow_html=True)
