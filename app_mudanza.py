@@ -203,6 +203,7 @@ with c1:
     st.markdown("**1. Fecha y Vehículo**")
     fecha_seleccionada = st.date_input("📅 Fecha", datetime.date.today(), min_value=datetime.date.today())
     
+    # DICCIONARIO CON IMÁGENES
     vehiculos = {
         "👉 Seleccione un Vehículo": {"precio": 0, "img": "❓", "foto": "https://cdn-icons-png.flaticon.com/512/7542/7542676.png"},
         "Furgoneta (Pequeña) - $30": {"precio": 30, "img": "🚐", "foto": "https://img.freepik.com/foto-gratis/furgoneta-reparto-blanco-sobre-fondo-blanco_123583-118.jpg"},
@@ -213,6 +214,7 @@ with c1:
     seleccion = st.selectbox("🚛 Camión", list(vehiculos.keys()))
     dato_camion = vehiculos[seleccion]
     
+    # MOSTRAR FOTO DEL CAMIÓN
     st.markdown(f"""
         <div style="text-align:center;">
             <img src="{dato_camion['foto']}" class="vehicle-preview" style="max-height:100px; object-fit:contain;">
