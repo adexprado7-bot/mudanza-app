@@ -173,8 +173,7 @@ with c1:
     st.markdown("**1. Fecha y Vehículo**")
     fecha_seleccionada = st.date_input("📅 Fecha", datetime.date.today(), min_value=datetime.date.today())
     
-    # DICCIONARIO CON IMÁGENES (URLs de ejemplo)
-    # NOTA: Puedes reemplazar estas URLs con nombres de archivos locales (ej: "camion1.jpg") si los subes a la carpeta.
+    # DICCIONARIO CON IMÁGENES
     vehiculos = {
         "👉 Seleccione un Vehículo": {"precio": 0, "img": "❓", "foto": "https://cdn-icons-png.flaticon.com/512/7542/7542676.png"},
         "Furgoneta (Pequeña) - $30": {"precio": 30, "img": "🚐", "foto": "https://img.freepik.com/foto-gratis/furgoneta-reparto-blanco-sobre-fondo-blanco_123583-118.jpg"},
@@ -399,7 +398,7 @@ Quedo a la espera de su confirmación."""
     with st.expander("¿Desarman y arman camas?"):
         st.write("Sí, nuestro personal está capacitado para desmontar y armar camas estándar sin costo adicional. Armarios complejos pueden requerir visita previa.")
     with st.expander("¿Suben muebles por balcones?"):
-        st.write("El servicio estándar es por escaleras o ascensor. Maniobras por balcones ("volados") tienen un costo adicional y riesgo evaluado.")
+        st.write("El servicio estándar es por escaleras o ascensor. Maniobras por balcones ('volados') tienen un costo adicional y riesgo evaluado.")
     with st.expander("¿Qué incluye el material?"):
         st.write("Cajas para vajilla/ropa y rollos para proteger muebles. Nosotros nos encargamos de embalar lo grande.")
     
