@@ -4,6 +4,7 @@ import urllib.parse
 from fpdf import FPDF
 import base64
 import os
+import tempfile # Necesario para procesar las fotos subidas
 
 # --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(page_title="Mudanza Prime | Cotizador", page_icon="🚚", layout="wide")
@@ -49,7 +50,7 @@ class PDF(FPDF):
         self.set_text_color(128)
         self.cell(0, 10, clean_text('Mudanza Prime - Guayaquil | Precio sujeto a confirmacion final'), 0, 0, 'C')
 
-def generar_pdf(fecha, camion, personal, materiales, accesos_txt, inventario_txt, total, pago_seleccionado, desglose):
+def generar_pdf(fecha, camion, personal, materiales, accesos_txt, inventario_txt, total, pago_seleccionado, desglose, imagenes_usuario):
     pdf = PDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
@@ -90,6 +91,32 @@ def generar_pdf(fecha, camion, personal, materiales, accesos_txt, inventario_txt
     pdf.set_text_color(46, 0, 78)
     pdf.cell(140, 15, clean_text("TOTAL ESTIMADO"), 1)
     pdf.cell(50, 15, f"${total:.2f}", 1, 1, 'R')
+
+    # --- AGREGAR FOTOS AL PDF ---
+    if imagenes_usuario:
+        pdf.add_page()
+        pdf.set_font("Arial", 'B', 14)
+        pdf.set_text_color(46, 0, 78)
+        pdf.cell(0, 10, clean_text("Registro Fotografico de Objetos"), 0, 1, 'L')
+        pdf.ln(5)
+        
+        for img_file in imagenes_usuario:
+            # Crear archivo temporal para que FPDF lo pueda leer
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
+                tmp.write(img_file.getvalue())
+                tmp_path = tmp.name
+            
+            try:
+                # Agregar imagen centrada (ancho 100mm)
+                pdf.image(tmp_path, x=55, w=100)
+                pdf.ln(10)
+            except Exception:
+                pass
+            finally:
+                # Borrar archivo temporal
+                if os.path.exists(tmp_path):
+                    os.remove(tmp_path)
+
     return pdf.output(dest='S').encode('latin-1', 'ignore')
 
 # --- CSS ---
@@ -123,6 +150,9 @@ st.markdown(f"""
     li[role="option"] {{ background-color: white !important; color: black !important; }}
     li[role="option"]:hover {{ background-color: {COLOR_AMARILLO} !important; color: black !important; }}
     div[role="radiogroup"] label {{ background-color: white !important; border: 1px solid #ddd; padding: 10px; border-radius: 8px; margin-right: 10px; }}
+    
+    /* ESTILO PARA EL UPLOADER */
+    div[data-testid="stFileUploader"] section {{ background-color: white; border: 1px dashed {COLOR_MORADO}; }}
     
     .tip-box {{ padding: 10px; border-bottom: 1px solid #eee; font-size: 14px; }}
     .review-card {{ background-color: white; padding: 15px; border-radius: 10px; margin-bottom: 10px; border-left: 4px solid {COLOR_AMARILLO}; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }}
@@ -173,7 +203,6 @@ with c1:
     st.markdown("**1. Fecha y Vehículo**")
     fecha_seleccionada = st.date_input("📅 Fecha", datetime.date.today(), min_value=datetime.date.today())
     
-    # DICCIONARIO CON IMÁGENES
     vehiculos = {
         "👉 Seleccione un Vehículo": {"precio": 0, "img": "❓", "foto": "https://cdn-icons-png.flaticon.com/512/7542/7542676.png"},
         "Furgoneta (Pequeña) - $30": {"precio": 30, "img": "🚐", "foto": "https://img.freepik.com/foto-gratis/furgoneta-reparto-blanco-sobre-fondo-blanco_123583-118.jpg"},
@@ -184,7 +213,6 @@ with c1:
     seleccion = st.selectbox("🚛 Camión", list(vehiculos.keys()))
     dato_camion = vehiculos[seleccion]
     
-    # MOSTRAR FOTO DEL CAMIÓN
     st.markdown(f"""
         <div style="text-align:center;">
             <img src="{dato_camion['foto']}" class="vehicle-preview" style="max-height:100px; object-fit:contain;">
@@ -214,9 +242,9 @@ with c4:
 
 st.markdown("</div>", unsafe_allow_html=True)
 
-# --- INVENTARIO ---
+# --- INVENTARIO + FOTOS ---
 lista_objetos = []
-with st.expander("📝 LISTA DE INVENTARIO (Clic para desplegar)", expanded=False):
+with st.expander("📝 LISTA DE INVENTARIO Y FOTOS (Clic para desplegar)", expanded=False):
     col_inv_1, col_inv_2, col_inv_3, col_inv_4 = st.columns(4)
     with col_inv_1:
         st.markdown("##### ❄️ Línea Blanca")
@@ -254,6 +282,11 @@ with st.expander("📝 LISTA DE INVENTARIO (Clic para desplegar)", expanded=Fals
         if camas: lista_objetos.append(f"{camas} Camas")
         if veladores: lista_objetos.append(f"{veladores} Veladores")
         if comodas: lista_objetos.append(f"{comodas} Cómodas")
+
+    st.write("---")
+    st.markdown("##### 📸 Objetos Grandes o Frágiles (Opcional)")
+    st.info("Sube fotos de muebles delicados (Pianos, Vidrios, etc.) para incluirlos en la cotización.")
+    imagenes_usuario = st.file_uploader("Arrastra tus fotos aquí (JPG/PNG)", accept_multiple_files=True, type=['png', 'jpg', 'jpeg'])
 
 inventario_final = ", ".join(lista_objetos) if lista_objetos else "No especificado"
 
@@ -360,7 +393,8 @@ with c_desglose:
             inventario_txt=inventario_final,
             total=total,
             pago_seleccionado=metodo_pago,
-            desglose={'camion': precio_camion, 'personal': precio_personal, 'materiales': precio_materiales, 'pisos': precio_pisos}
+            desglose={'camion': precio_camion, 'personal': precio_personal, 'materiales': precio_materiales, 'pisos': precio_pisos},
+            imagenes_usuario=imagenes_usuario
         )
         st.download_button(
             label="📄 Descargar Cotización (PDF)",
@@ -373,6 +407,9 @@ with c_desglose:
         st.warning("👆 Selecciona un vehículo para habilitar la descarga.")
 
 with c_extra:
+    # Lógica de mensaje de fotos para WhatsApp
+    texto_fotos = "📸 Fotos: Ver PDF adjunto" if imagenes_usuario else "Sin fotos adjuntas"
+    
     msg = f"""Hola Mudanza Prime. Solicito Reserva:
 🚚 Vehículo: {seleccion}
 📅 Fecha: {fecha_str}
@@ -381,6 +418,7 @@ with c_extra:
 📦 Items: {inventario_final}
 💰 Total: ${total:.2f}
 💳 Pago: {metodo_pago}
+{texto_fotos}
 
 Quedo a la espera de su confirmación."""
     lnk = f"https://wa.me/{NUMERO_WHATSAPP}?text={urllib.parse.quote(msg)}"
@@ -393,7 +431,7 @@ Quedo a la espera de su confirmación."""
 
     st.write("")
     
-    # --- NUEVA SECCIÓN FAQ ---
+    # --- FAQ ---
     st.markdown("##### ❓ Preguntas Frecuentes")
     with st.expander("¿Desarman y arman camas?"):
         st.write("Sí, nuestro personal está capacitado para desmontar y armar camas estándar sin costo adicional. Armarios complejos pueden requerir visita previa.")
