@@ -183,23 +183,59 @@ with col_izq:
         if data_camion["foto"] and os.path.exists(data_camion["foto"]):
             st.image(data_camion["foto"], caption=f"Unidad: {camion_select}", use_container_width=True)
 
-    st.subheader("2. 📦 ¿Qué vamos a llevar?")
+    st.subheader("2. 📦 Detalle de Inventario")
     with st.container(border=True):
-        st.info("Selecciona los ítems principales o sube fotos.")
+        lista_objetos = []
         
-        cc1, cc2 = st.columns(2)
-        with cc1:
-            refri = st.checkbox("Refrigeradora")
-            cocina = st.checkbox("Cocina")
-            lavadora = st.checkbox("Lavadora")
-            cama = st.checkbox("Cama(s)")
-        with cc2:
-            sala = st.checkbox("Juego de Sala")
-            comedor = st.checkbox("Juego de Comedor")
-            aires = st.checkbox("Aires Acondicionados")
-        
-        otros = st.text_area("Otros detalles (Cajas, espejos...)", height=80)
-        fotos = st.file_uploader("📸 Sube fotos (Opcional)", accept_multiple_files=True, type=['jpg', 'png', 'jpeg'])
+        # --- AQUÍ RECUPERAMOS EL DISEÑO DETALLADO ---
+        with st.expander("📝 Clic aquí para desglosar tus cosas", expanded=True):
+            col_inv_1, col_inv_2, col_inv_3, col_inv_4 = st.columns(4)
+            
+            with col_inv_1:
+                st.markdown("##### ❄️ Cocina")
+                tipo_refri = st.selectbox("Refrigeradora", ["Ninguna", "Normal", "Side by Side (Grande)"])
+                if tipo_refri != "Ninguna": lista_objetos.append(f"Refri {tipo_refri}")
+                cocina = st.number_input("Cocina", 0, 5, 0)
+                if cocina: lista_objetos.append(f"{cocina} Cocina")
+                lavadora = st.number_input("Lavadora", 0, 5, 0)
+                if lavadora: lista_objetos.append(f"{lavadora} Lavadora")
+                
+            with col_inv_2:
+                st.markdown("##### 🛋️ Sala")
+                muebles_sala = st.number_input("Juego Sala", 0, 5, 0)
+                if muebles_sala: lista_objetos.append(f"{muebles_sala} Juego Sala")
+                mesa_centro = st.number_input("Mesa Centro", 0, 5, 0)
+                if mesa_centro: lista_objetos.append(f"{mesa_centro} Mesa Centro")
+                tv = st.number_input("Televisores", 0, 5, 0)
+                if tv: lista_objetos.append(f"{tv} TVs")
+
+            with col_inv_3:
+                st.markdown("##### 🍽️ Comedor")
+                mesa_comedor = st.checkbox("Mesa Comedor")
+                sillas = st.number_input("Sillas", 0, 12, 0)
+                if mesa_comedor: lista_objetos.append(f"Mesa Comedor + {sillas} Sillas")
+                elif sillas: lista_objetos.append(f"{sillas} Sillas sueltas")
+                bufetera = st.number_input("Bufetera", 0, 5, 0)
+                if bufetera: lista_objetos.append(f"{bufetera} Bufetera")
+
+            with col_inv_4:
+                st.markdown("##### 🛏️ Dormitorio")
+                camas = st.number_input("Camas", 0, 10, 0)
+                if camas: lista_objetos.append(f"{camas} Camas")
+                veladores = st.number_input("Veladores", 0, 10, 0)
+                if veladores: lista_objetos.append(f"{veladores} Veladores")
+                comodas = st.number_input("Cómodas", 0, 5, 0)
+                if comodas: lista_objetos.append(f"{comodas} Cómodas")
+
+        st.write("---")
+        otros = st.text_area("Otros objetos / Cajas Varias", placeholder="Ej: 10 cajas de libros, 1 espejo grande...")
+        if others := otros.strip():
+            lista_objetos.append(f"Extras: {others}")
+            
+        fotos = st.file_uploader("📸 Sube fotos de objetos delicados", accept_multiple_files=True, type=['jpg', 'png', 'jpeg'])
+
+        # Generar texto final del inventario
+        inv_txt = ", ".join(lista_objetos) if lista_objetos else "Inventario Básico"
 
 with col_der:
     st.subheader("3. 👷 Servicios y Costos")
@@ -234,11 +270,9 @@ with col_der:
     
     total = p_camion + p_personal + p_materiales + costo_pisos
     
-    # --- TARJETA DE TOTAL (FIX FANTASMA) ---
+    # --- TARJETA DE TOTAL (Amarillo Visible) ---
     st.write("")
     
-    # Usamos colores explícitos para asegurar visibilidad
-    # Fondo Amarillo (#FFC300) y Texto Morado Oscuro (#2E004E)
     st.markdown(f"""
     <div style="
         background-color: #FFC300; 
@@ -259,7 +293,6 @@ with col_der:
     pago = st.selectbox("Método de Pago", ["Efectivo", "Transferencia", "Deuna!"])
     confirmar = st.checkbox("Acepto que el valor es referencial.")
     
-    inv_txt = f"Refri:{refri}, Cocina:{cocina}, Sala:{sala}, Comedor:{comedor}, Cama:{cama}. Otros: {otros}"
     ruta_txt = f"De {piso_salida} a {piso_llegada}"
     mat_txt = f"{cant_cajas} Cajas, {cant_rollos} Rollos"
     
