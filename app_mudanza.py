@@ -2,7 +2,6 @@ import streamlit as st
 import datetime
 import urllib.parse
 from fpdf import FPDF
-import base64
 import os
 import tempfile
 
@@ -10,103 +9,103 @@ import tempfile
 st.set_page_config(page_title="Mudanza Prime", page_icon="🚚", layout="wide")
 
 # --- VARIABLES GLOBALES ---
-NUMERO_WHATSAPP = "593998994518"  # ¡Corregido!
+NUMERO_WHATSAPP = "593998994518"
 COLOR_PRINCIPAL = "#2E004E"
-COLOR_SECUNDARIO = "#FFC300"
 
 # --- 2. FUNCIONES UTILITARIAS ---
-
-def get_image_base64(path):
-    """Convierte una imagen local a base64 para mostrarla en HTML/CSS"""
-    if not os.path.exists(path):
-        return None
-    try:
-        with open(path, "rb") as image_file:
-            encoded = base64.b64encode(image_file.read()).decode()
-        # Determinar tipo mime
-        if path.lower().endswith('.webp'): mime = 'image/webp'
-        elif path.lower().endswith('.jpg') or path.lower().endswith('.jpeg') or path.lower().endswith('.jfif'): mime = 'image/jpeg'
-        else: mime = 'image/png'
-        return f"data:{mime};base64,{encoded}"
-    except Exception:
-        return None
-
 def clean_text(text):
-    """Limpia caracteres especiales para el PDF"""
+    """Limpia caracteres especiales para evitar errores en el PDF"""
+    if not isinstance(text, str):
+        text = str(text)
+    # Reemplazos comunes para evitar conflictos con latin-1
+    replacements = {
+        '€': 'EUR', '’': "'", '–': "-", '—': "-",
+        'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u',
+        'Á': 'A', 'É': 'E', 'Í': 'I', 'Ó': 'O', 'Ú': 'U',
+        'ñ': 'n', 'Ñ': 'N', '📷': '', '🚚': '', '📦': '', '📅': ''
+    }
+    for old, new in replacements.items():
+        text = text.replace(old, new)
+    
     return text.encode('latin-1', 'ignore').decode('latin-1')
 
 # --- 3. CLASE PARA PDF ---
 class PDF(FPDF):
     def header(self):
         if os.path.exists("logo.png"):
-            try: self.image('logo.png', x=10, y=8, w=40)
+            try: self.image('logo.png', x=10, y=8, w=30)
             except: pass
-        self.set_font('Arial', 'B', 20)
+        self.set_font('Arial', 'B', 16)
+        self.set_text_color(46, 0, 78) # Morado
         self.cell(0, 10, clean_text('MUDANZA PRIME'), 0, 1, 'C')
         self.set_font('Arial', 'I', 10)
-        self.cell(0, 10, clean_text('Cotización de Servicio'), 0, 1, 'C')
-        self.ln(10)
+        self.set_text_color(100, 100, 100)
+        self.cell(0, 5, clean_text('Cotización de Servicio'), 0, 1, 'C')
+        self.ln(15)
 
     def footer(self):
         self.set_y(-15)
         self.set_font('Arial', 'I', 8)
+        self.set_text_color(128)
         self.cell(0, 10, clean_text('Página %s - Mudanza Prime Guayaquil' % self.page_no()), 0, 0, 'C')
 
 def generar_pdf_completo(datos, desglose, total, imagenes):
     pdf = PDF()
     pdf.add_page()
-    pdf.set_font("Arial", size=12)
+    pdf.set_font("Arial", size=11)
     
-    # Datos Generales
-    pdf.set_fill_color(240, 240, 240)
-    pdf.cell(0, 10, clean_text(f"Fecha de Cotización: {datetime.date.today()}"), ln=1, fill=True)
+    # Bloque de Fecha y Cliente
+    pdf.set_fill_color(245, 245, 245)
+    pdf.cell(0, 10, clean_text(f"Fecha Emisión: {datetime.date.today()}"), ln=1, fill=True)
     pdf.ln(5)
     
-    pdf.cell(0, 8, clean_text(f"Cliente: Usuario Web"), ln=1)
-    pdf.cell(0, 8, clean_text(f"Fecha Mudanza: {datos['fecha']}"), ln=1)
-    pdf.cell(0, 8, clean_text(f"Camión: {datos['camion']}"), ln=1)
-    pdf.cell(0, 8, clean_text(f"Ruta: {datos['ruta']}"), ln=1)
-    pdf.cell(0, 8, clean_text(f"Forma de Pago: {datos['pago']}"), ln=1)
+    pdf.cell(0, 7, clean_text(f"Fecha Servicio: {datos['fecha']}"), ln=1)
+    pdf.cell(0, 7, clean_text(f"Vehículo: {datos['camion']}"), ln=1)
+    pdf.cell(0, 7, clean_text(f"Ruta: {datos['ruta']}"), ln=1)
+    pdf.cell(0, 7, clean_text(f"Pago: {datos['pago']}"), ln=1)
     pdf.ln(5)
     
     # Inventario
-    pdf.set_font("Arial", 'B', 12)
-    pdf.cell(0, 10, "Resumen de Inventario:", ln=1)
-    pdf.set_font("Arial", size=11)
-    pdf.multi_cell(0, 6, clean_text(datos['inventario']))
+    pdf.set_font("Arial", 'B', 11)
+    pdf.cell(0, 8, "Resumen de Carga:", ln=1)
+    pdf.set_font("Arial", size=10)
+    pdf.multi_cell(0, 5, clean_text(datos['inventario']))
     pdf.ln(5)
 
     # Tabla de Costos
-    pdf.set_font("Arial", 'B', 12)
-    pdf.cell(140, 10, "Detalle", 1)
-    pdf.cell(50, 10, "Valor", 1, 1, 'C')
+    pdf.set_font("Arial", 'B', 11)
+    pdf.cell(140, 8, "Descripción", 1)
+    pdf.cell(40, 8, "Valor", 1, 1, 'C')
     
-    pdf.set_font("Arial", size=12)
-    pdf.cell(140, 10, clean_text(f"Vehículo Base"), 1)
-    pdf.cell(50, 10, f"${desglose['camion']:.2f}", 1, 1, 'R')
+    pdf.set_font("Arial", size=11)
+    pdf.cell(140, 8, clean_text(f"Transporte Base"), 1)
+    pdf.cell(40, 8, f"${desglose['camion']:.2f}", 1, 1, 'R')
     
-    pdf.cell(140, 10, clean_text(f"Personal ({datos['personal']} ayudantes)"), 1)
-    pdf.cell(50, 10, f"${desglose['personal']:.2f}", 1, 1, 'R')
+    pdf.cell(140, 8, clean_text(f"Personal ({datos['personal']} ayudantes)"), 1)
+    pdf.cell(40, 8, f"${desglose['personal']:.2f}", 1, 1, 'R')
     
-    pdf.cell(140, 10, clean_text(f"Accesos/Pisos"), 1)
-    pdf.cell(50, 10, f"${desglose['pisos']:.2f}", 1, 1, 'R')
+    pdf.cell(140, 8, clean_text(f"Accesos y Pisos"), 1)
+    pdf.cell(40, 8, f"${desglose['pisos']:.2f}", 1, 1, 'R')
     
-    pdf.cell(140, 10, clean_text(f"Materiales ({datos['materiales']})"), 1)
-    pdf.cell(50, 10, f"${desglose['materiales']:.2f}", 1, 1, 'R')
+    pdf.cell(140, 8, clean_text(f"Materiales ({datos['materiales']})"), 1)
+    pdf.cell(40, 8, f"${desglose['materiales']:.2f}", 1, 1, 'R')
     
     pdf.set_font("Arial", 'B', 14)
-    pdf.cell(140, 15, "TOTAL ESTIMADO", 1)
-    pdf.cell(50, 15, f"${total:.2f}", 1, 1, 'R')
+    pdf.set_text_color(46, 0, 78)
+    pdf.cell(140, 12, "TOTAL A PAGAR", 1)
+    pdf.cell(40, 12, f"${total:.2f}", 1, 1, 'R')
 
     # Fotos Adjuntas
     if imagenes:
         pdf.add_page()
-        pdf.cell(0, 10, "Evidencia Fotográfica:", ln=1)
+        pdf.set_font("Arial", 'B', 12)
+        pdf.cell(0, 10, "Fotos Adjuntas:", ln=1)
         for img_file in imagenes:
             with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
                 tmp.write(img_file.getvalue())
                 tmp_path = tmp.name
             try:
+                # Ajustar imagen para que no se salga
                 pdf.image(tmp_path, x=20, w=150)
                 pdf.ln(5)
             except: pass
@@ -114,80 +113,56 @@ def generar_pdf_completo(datos, desglose, total, imagenes):
 
     return pdf.output(dest='S').encode('latin-1', 'ignore')
 
-# --- 4. CSS LIMPIO (SIN ROMPER TEXTOS) ---
+# --- 4. CSS PARA BOTONES Y TARJETAS (SIN AFECTAR INPUTS) ---
 st.markdown("""
     <style>
-    /* Ocultar menú de streamlit */
+    /* Ocultar menú default */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     
-    /* Contenedores con estilo de tarjeta limpia */
-    .stExpander, div[data-testid="stForm"] {
-        border: 1px solid #ddd;
-        border-radius: 10px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        background-color: white;
-    }
-    
-    /* Encabezados Morados */
-    h1, h2, h3 {
-        color: #2E004E !important;
-    }
-
-    /* Botón de WhatsApp destacado */
+    /* Botón de WhatsApp */
     .wa-btn {
-        display: block;
-        width: 100%;
-        background-color: #25D366;
-        color: white;
-        text-align: center;
-        padding: 15px;
-        border-radius: 10px;
-        text-decoration: none;
-        font-weight: bold;
-        font-size: 18px;
-        box-shadow: 0 4px 10px rgba(37, 211, 102, 0.4);
+        display: block; width: 100%; background-color: #25D366; color: white !important;
+        text-align: center; padding: 12px; border-radius: 8px; text-decoration: none;
+        font-weight: bold; font-size: 18px; margin-top: 10px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     }
-    .wa-btn:hover {
-        background-color: #128C7E;
-        color: white;
+    .wa-btn:hover { background-color: #128C7E; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+    
+    /* Cajas de Reseñas */
+    .review-box {
+        background-color: #FFFDE7; padding: 15px; border-radius: 10px;
+        border-left: 5px solid #FFC300; font-size: 14px; color: #333; margin-bottom: 10px;
     }
     
-    /* Reseñas */
-    .review-box {
-        background-color: #f9f9f9;
-        padding: 15px;
-        border-left: 5px solid #FFC300;
-        margin-bottom: 10px;
-        border-radius: 5px;
-    }
+    /* Títulos */
+    h1, h2, h3 { color: #2E004E !important; }
     </style>
 """, unsafe_allow_html=True)
 
-# --- 5. ENCABEZADO Y LOGO ---
-col_logo, col_titulo = st.columns([1, 4])
+# --- 5. LOGO Y TÍTULO ---
+col_logo, col_header = st.columns([1, 4])
 with col_logo:
-    # Intenta cargar logo, si no usa emoji
     if os.path.exists("logo.png"):
-        st.image("logo.png", width=150)
+        st.image("logo.png", width=120)
     else:
-        st.markdown("# 🚚")
+        st.header("🚚")
 
-with col_titulo:
-    st.title("Cotizador Mudanza Prime")
-    st.markdown("**Cotiza tu mudanza profesional en segundos. Sin compromisos.**")
+with col_header:
+    st.title("Mudanza Prime")
+    st.markdown("**Cotizador Profesional** | Guayaquil, Ecuador")
 
 st.divider()
 
-# --- 6. CUERPO PRINCIPAL (2 COLUMNAS PARA MEJOR ORDEN) ---
-col_izq, col_der = st.columns([1.2, 0.8], gap="large")
+# --- 6. ESTRUCTURA PRINCIPAL (2 COLUMNAS) ---
+col_izq, col_der = st.columns([1.5, 1], gap="medium")
 
 with col_izq:
-    st.subheader("1. 📅 Fecha y Vehículo")
+    st.subheader("1. 🚛 Selecciona tu Vehículo")
     with st.container(border=True):
         fecha = st.date_input("Fecha de Mudanza", datetime.date.today(), min_value=datetime.date.today())
         
-        # Diccionario de Camiones (Con tus imágenes locales)
+        # DEFINICIÓN DE CAMIONES CON IMÁGENES REALES
         camiones = {
             "Seleccionar...": {"precio": 0, "foto": None},
             "Camión 2.5 Toneladas ($40)": {"precio": 40, "foto": "camion 2.5.jfif"},
@@ -195,143 +170,114 @@ with col_izq:
             "Camión 6 Toneladas ($60)": {"precio": 60, "foto": "camion 6.jpg"},
         }
         
-        camion_select = st.selectbox("Selecciona el tamaño del camión", list(camiones.keys()))
+        camion_select = st.selectbox("Tamaño del Camión", list(camiones.keys()))
         data_camion = camiones[camion_select]
         
-        # Mostrar foto del camión si se selecciona
-        if data_camion["foto"] and os.path.exists(data_camion["foto"]):
-            st.image(data_camion["foto"], caption=f"Vehículo Referencial: {camion_select}", use_container_width=True)
-        elif camion_select != "Seleccionar...":
-            st.info("Imagen del vehículo no disponible, pero el servicio está garantizado.")
+        # Mostrar foto si existe
+        if data_camion["foto"]:
+            if os.path.exists(data_camion["foto"]):
+                st.image(data_camion["foto"], caption=f"Unidad: {camion_select}", use_container_width=True)
+            else:
+                st.warning(f"No se encontró la imagen: {data_camion['foto']}")
 
-    st.subheader("2. 📦 Inventario y Materiales")
+    st.subheader("2. 📦 ¿Qué vamos a llevar?")
     with st.container(border=True):
-        st.info("Describe brevemente qué llevas o sube fotos.")
+        st.info("Selecciona los ítems principales o sube fotos.")
         
-        # Lista rápida
-        c1, c2 = st.columns(2)
-        with c1:
+        cc1, cc2 = st.columns(2)
+        with cc1:
             refri = st.checkbox("Refrigeradora")
             cocina = st.checkbox("Cocina")
             lavadora = st.checkbox("Lavadora")
-        with c2:
+            cama = st.checkbox("Cama(s)")
+        with cc2:
             sala = st.checkbox("Juego de Sala")
             comedor = st.checkbox("Juego de Comedor")
-            cama = st.checkbox("Cama(s)")
-            
-        otros_items = st.text_area("Otros objetos (Cajas, espejos, etc.)", placeholder="Ej: 10 cajas, 1 bicicleta, 2 televisores...")
+            aires = st.checkbox("Aires Acondicionados")
         
-        fotos = st.file_uploader("📸 Sube fotos de tus cosas (Opcional)", accept_multiple_files=True, type=['png', 'jpg', 'jpeg'])
-        
-        st.write("---")
-        st.markdown("**Materiales de Embalaje**")
-        mc1, mc2 = st.columns(2)
-        with mc1:
-            cant_cajas = st.number_input("Cajas de Cartón ($1.50 c/u)", min_value=0, step=1)
-        with mc2:
-            cant_rollos = st.number_input("Rollos de Plástico ($20.00 c/u)", min_value=0, step=1)
+        otros = st.text_area("Otros detalles (Cajas, espejos, TV...)", height=80)
+        fotos = st.file_uploader("📸 Sube fotos (Opcional)", accept_multiple_files=True, type=['jpg', 'png', 'jpeg'])
 
 with col_der:
-    st.subheader("3. 📍 Ruta y Personal")
+    st.subheader("3. 👷 Servicios y Costos")
     with st.container(border=True):
         # Personal
-        num_ayudantes = st.slider("Número de Ayudantes ($15 c/u)", 0, 8, 0)
+        st.markdown("##### Personal de Carga")
+        num_ayudantes = st.slider("Ayudantes ($15 c/u)", 0, 8, 0)
         
-        st.write("---")
-        # Accesos
-        st.markdown("**Pisos / Escaleras**")
-        sc1, sc2 = st.columns(2)
-        with sc1:
-            piso_salida = st.selectbox("Piso Salida", ["PB", "1", "2", "3", "4+"])
-            asc_salida = st.checkbox("Ascensor (Salida)")
-        with sc2:
-            piso_llegada = st.selectbox("Piso Llegada", ["PB", "1", "2", "3", "4+"])
-            asc_llegada = st.checkbox("Ascensor (Llegada)")
+        st.markdown("##### Accesos (Pisos)")
+        c_sal, c_lleg = st.columns(2)
+        with c_sal:
+            piso_salida = st.selectbox("Salida", ["PB", "1", "2", "3", "4+"])
+            asc_salida = st.checkbox("Ascensor (S)")
+        with c_lleg:
+            piso_llegada = st.selectbox("Llegada", ["PB", "1", "2", "3", "4+"])
+            asc_llegada = st.checkbox("Ascensor (Ll)")
+            
+        st.markdown("##### Materiales de Embalaje")
+        c_mat1, c_mat2 = st.columns(2)
+        with c_mat1:
+            cant_cajas = st.number_input("Cajas ($1.50)", min_value=0)
+        with c_mat2:
+            cant_rollos = st.number_input("Rollos ($20)", min_value=0)
 
-    # --- CÁLCULOS EN TIEMPO REAL ---
-    # Lógica de precios
+    # --- LÓGICA DE PRECIOS ---
     p_camion = data_camion["precio"]
     p_personal = num_ayudantes * 15
     p_materiales = (cant_cajas * 1.5) + (cant_rollos * 20)
     
-    # Pisos: Si no hay ascensor y es piso > 1, cobra extra
     costo_pisos = 0
     if not asc_salida and piso_salida not in ["PB", "1"]: costo_pisos += 10
     if not asc_llegada and piso_llegada not in ["PB", "1"]: costo_pisos += 10
     
     total = p_camion + p_personal + p_materiales + costo_pisos
-
-    st.write("")
-    st.write("")
     
-    # --- TARJETA DE TOTAL (ESTILO LIMPIO) ---
+    # --- TARJETA DE TOTAL ---
+    st.write("")
     st.markdown(f"""
-    <div style="background-color: {COLOR_PRINCIPAL}; color: white; padding: 20px; border-radius: 15px; text-align: center;">
-        <h3 style="color:white !important; margin:0;">TOTAL ESTIMADO</h3>
-        <h1 style="color:#FFC300 !important; font-size: 50px; margin:0;">${total:.2f}</h1>
-        <p style="font-size: 12px; opacity: 0.8;">Incluye transporte y servicios seleccionados</p>
+    <div style="background-color: {COLOR_PRINCIPAL}; color: white; padding: 20px; border-radius: 10px; text-align: center;">
+        <h4 style="color:white !important; margin:0;">TOTAL ESTIMADO</h4>
+        <h1 style="color:#FFC300 !important; font-size: 45px; margin:0;">${total:.2f}</h1>
+        <p style="font-size: 12px; margin:0; opacity:0.8;">Sujeto a confirmación</p>
     </div>
     """, unsafe_allow_html=True)
     
     st.write("")
+    st.markdown("##### Finalizar Reserva")
+    pago = st.selectbox("Método de Pago", ["Efectivo", "Transferencia", "Deuna!"])
+    confirmar = st.checkbox("Acepto que el valor puede variar según inventario final.")
     
-    # --- MÉTODO DE PAGO Y CONFIRMACIÓN ---
-    st.markdown("#### ✅ Finalizar")
-    metodo_pago = st.selectbox("Forma de Pago", ["Efectivo", "Transferencia Bancaria", "Deuna!"])
-    confirmacion = st.checkbox("Entiendo que el precio final depende del inventario real.")
-
-    # Construcción de textos para reporte
-    inv_str = f"Refri: {'Sí' if refri else 'No'}, Cocina: {'Sí' if cocina else 'No'}, Sala: {'Sí' if sala else 'No'}. Extras: {otros_items}"
-    ruta_str = f"De {piso_salida} a {piso_llegada}"
-    materiales_str = f"{cant_cajas} Cajas, {cant_rollos} Rollos"
-
-    if confirmacion and total > 0:
-        # 1. Mensaje WhatsApp
-        msg_wa = f"*Hola Mudanza Prime!* 🚚\nQuiero reservar:\n📅 *Fecha:* {fecha}\n🚛 *Vehículo:* {camion_select}\n📦 *Inventario:* {inv_str}\n👷 *Ayudantes:* {num_ayudantes}\n💰 *Total:* ${total:.2f}\n📷 *Fotos:* {'Sí adjuntas' if fotos else 'No'}"
-        link_wa = f"https://wa.me/{NUMERO_WHATSAPP}?text={urllib.parse.quote(msg_wa)}"
+    # Textos para reporte
+    inv_txt = f"Refri:{refri}, Cocina:{cocina}, Sala:{sala}, Comedor:{comedor}, Cama:{cama}. Otros: {otros}"
+    ruta_txt = f"De {piso_salida} a {piso_llegada}"
+    mat_txt = f"{cant_cajas} Cajas, {cant_rollos} Rollos"
+    
+    if confirmar and total > 0:
+        # Botón WhatsApp
+        msg = f"*SOLICITUD DE MUDANZA* 🚚\n📅 {fecha}\n🚛 {camion_select}\n💰 Total: ${total:.2f}\n📦 {inv_txt}"
+        lnk = f"https://wa.me/{NUMERO_WHATSAPP}?text={urllib.parse.quote(msg)}"
+        st.markdown(f"""<a href="{lnk}" target="_blank" class="wa-btn">📲 RESERVAR POR WHATSAPP</a>""", unsafe_allow_html=True)
         
-        st.markdown(f"""<a href="{link_wa}" target="_blank" class="wa-btn">📲 RESERVAR AHORA</a>""", unsafe_allow_html=True)
-        
-        # 2. PDF
+        # Botón PDF
         st.write("")
-        pdf_bytes = generar_pdf_completo(
-            {'fecha': fecha, 'camion': camion_select, 'ruta': ruta_str, 'pago': metodo_pago, 'inventario': inv_str, 'personal': num_ayudantes, 'materiales': materiales_str},
-            {'camion': p_camion, 'personal': p_personal, 'materiales': p_materiales, 'pisos': costo_pisos},
-            total, fotos
-        )
-        st.download_button("📄 Descargar Cotización PDF", data=pdf_bytes, file_name="Cotizacion_Mudanza.pdf", mime="application/pdf", use_container_width=True)
-        
-    elif total == 0:
-        st.warning("Selecciona un camión para ver el precio.")
+        try:
+            pdf_bytes = generar_pdf_completo(
+                {'fecha': fecha, 'camion': camion_select, 'ruta': ruta_txt, 'pago': pago, 'inventario': inv_txt, 'personal': num_ayudantes, 'materiales': mat_txt},
+                {'camion': p_camion, 'personal': p_personal, 'materiales': p_materiales, 'pisos': costo_pisos},
+                total, fotos
+            )
+            st.download_button("📄 Descargar PDF", data=pdf_bytes, file_name="Cotizacion.pdf", mime="application/pdf", use_container_width=True)
+        except Exception as e:
+            st.error(f"Error al generar PDF: {e}")
 
-# --- 7. SECCIÓN DE RESEÑAS Y CONFIANZA ---
+# --- 7. SECCIÓN DE RESEÑAS ---
 st.divider()
-st.subheader("⭐ Lo que dicen nuestros clientes")
-c_rev1, c_rev2, c_rev3 = st.columns(3)
+st.subheader("⭐ Opiniones de Clientes")
+r1, r2, r3 = st.columns(3)
 
-with c_rev1:
-    st.markdown("""
-    <div class="review-box">
-        <b>María P.</b> ⭐⭐⭐⭐⭐<br>
-        "Llegaron súper puntuales y trataron mis muebles con mucho cuidado. Recomendados."
-    </div>
-    """, unsafe_allow_html=True)
-
-with c_rev2:
-    st.markdown("""
-    <div class="review-box">
-        <b>Carlos A.</b> ⭐⭐⭐⭐⭐<br>
-        "El camión de 3.5 toneladas estaba impecable. El personal muy educado."
-    </div>
-    """, unsafe_allow_html=True)
-
-with c_rev3:
-    st.markdown("""
-    <div class="review-box">
-        <b>Empresa S.A.</b> ⭐⭐⭐⭐⭐<br>
-        "Nos ayudaron con una mudanza de oficina compleja. Todo salió perfecto."
-    </div>
-    """, unsafe_allow_html=True)
-
-st.write("")
-st.caption("© 2025 Mudanza Prime Guayaquil | Todos los derechos reservados.")
+with r1:
+    st.markdown("""<div class="review-box"><b>María P.</b> ⭐⭐⭐⭐⭐<br>"Excelente servicio, muy cuidadosos con mi refrigeradora."</div>""", unsafe_allow_html=True)
+with r2:
+    st.markdown("""<div class="review-box"><b>Carlos G.</b> ⭐⭐⭐⭐⭐<br>"El camión llegó puntual. Recomendados 100% en Guayaquil."</div>""", unsafe_allow_html=True)
+with r3:
+    st.markdown("""<div class="review-box"><b>Ana L.</b> ⭐⭐⭐⭐⭐<br>"Me ayudaron a embalar todo. El personal muy amable."</div>""", unsafe_allow_html=True)
