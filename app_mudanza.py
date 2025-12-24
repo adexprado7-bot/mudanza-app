@@ -12,18 +12,11 @@ st.set_page_config(page_title="Mudanza Prime", page_icon="🚚", layout="wide")
 # --- VARIABLES ---
 NUMERO_WHATSAPP = "593998994518"
 
-# --- 2. FUNCIONES DE LIMPIEZA (FIX ERROR PDF) ---
+# --- 2. FUNCIONES UTILITARIAS ---
 def clean_text(text):
-    """
-    Limpia el texto de cualquier carácter que pueda romper el PDF.
-    Elimina emojis y reemplaza tildes por caracteres seguros para Latin-1.
-    """
-    if text is None:
-        return ""
+    """Limpia caracteres especiales para evitar errores en el PDF"""
     if not isinstance(text, str):
         text = str(text)
-        
-    # Mapa de reemplazos seguros
     replacements = {
         '€': 'EUR', '’': "'", '–': "-", '—': "-",
         'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u',
@@ -31,12 +24,8 @@ def clean_text(text):
         'ñ': 'n', 'Ñ': 'N', 'ü': 'u', 'Ü': 'U',
         '°': ' ', '|': '-', '•': '-'
     }
-    
-    # Primero reemplazamos lo conocido
     for old, new in replacements.items():
         text = text.replace(old, new)
-    
-    # Luego eliminamos cualquier caracter no-latin-1 (como emojis)
     return text.encode('latin-1', 'ignore').decode('latin-1')
 
 # --- 3. CLASE PDF ---
@@ -46,7 +35,7 @@ class PDF(FPDF):
             try: self.image('logo.png', x=10, y=8, w=30)
             except: pass
         self.set_font('Arial', 'B', 16)
-        self.set_text_color(46, 0, 78) # Morado
+        self.set_text_color(46, 0, 78) 
         self.cell(0, 10, clean_text('MUDANZA PRIME'), 0, 1, 'C')
         self.set_font('Arial', 'I', 10)
         self.set_text_color(100, 100, 100)
@@ -64,13 +53,12 @@ def generar_pdf_completo(datos, desglose, total, imagenes):
     pdf.add_page()
     pdf.set_font("Arial", size=11)
     
-    # Bloque de Fecha
-    pdf.set_fill_color(240, 240, 240) # Gris claro
+    # Fecha y Datos
+    pdf.set_fill_color(240, 240, 240)
     pdf.set_text_color(0, 0, 0)
     pdf.cell(0, 10, clean_text(f"Fecha Emisión: {datetime.date.today()}"), ln=1, fill=True)
     pdf.ln(5)
     
-    # Datos Principales
     pdf.cell(0, 7, clean_text(f"Fecha Servicio: {datos['fecha']}"), ln=1)
     pdf.cell(0, 7, clean_text(f"Vehículo: {datos['camion']}"), ln=1)
     pdf.cell(0, 7, clean_text(f"Ruta: {datos['ruta']}"), ln=1)
@@ -84,7 +72,7 @@ def generar_pdf_completo(datos, desglose, total, imagenes):
     pdf.multi_cell(0, 5, clean_text(datos['inventario']))
     pdf.ln(5)
 
-    # Tabla de Costos
+    # Costos
     pdf.set_font("Arial", 'B', 11)
     pdf.cell(140, 8, "Descripción", 1)
     pdf.cell(40, 8, "Valor", 1, 1, 'C')
@@ -92,22 +80,19 @@ def generar_pdf_completo(datos, desglose, total, imagenes):
     pdf.set_font("Arial", size=11)
     pdf.cell(140, 8, clean_text(f"Transporte Base"), 1)
     pdf.cell(40, 8, f"${desglose['camion']:.2f}", 1, 1, 'R')
-    
     pdf.cell(140, 8, clean_text(f"Personal ({datos['personal']} ayudantes)"), 1)
     pdf.cell(40, 8, f"${desglose['personal']:.2f}", 1, 1, 'R')
-    
     pdf.cell(140, 8, clean_text(f"Accesos y Pisos"), 1)
     pdf.cell(40, 8, f"${desglose['pisos']:.2f}", 1, 1, 'R')
-    
     pdf.cell(140, 8, clean_text(f"Materiales ({datos['materiales']})"), 1)
     pdf.cell(40, 8, f"${desglose['materiales']:.2f}", 1, 1, 'R')
     
     pdf.set_font("Arial", 'B', 14)
-    pdf.set_text_color(46, 0, 78) # Morado para total
+    pdf.set_text_color(46, 0, 78)
     pdf.cell(140, 12, "TOTAL A PAGAR", 1)
     pdf.cell(40, 12, f"${total:.2f}", 1, 1, 'R')
 
-    # Fotos Adjuntas
+    # Fotos
     if imagenes:
         pdf.add_page()
         pdf.set_font("Arial", 'B', 12)
@@ -118,7 +103,6 @@ def generar_pdf_completo(datos, desglose, total, imagenes):
                 tmp.write(img_file.getvalue())
                 tmp_path = tmp.name
             try:
-                # Ajustar imagen al ancho
                 pdf.image(tmp_path, x=20, w=150)
                 pdf.ln(5)
             except: pass
@@ -126,15 +110,12 @@ def generar_pdf_completo(datos, desglose, total, imagenes):
 
     return pdf.output(dest='S').encode('latin-1', 'ignore')
 
-# --- 4. CSS (ESTILOS VISUALES) ---
-# Aquí eliminé todo lo que forzaba el fondo blanco.
+# --- 4. CSS (ESTILOS) ---
 st.markdown("""
     <style>
-    /* Ocultar menú de streamlit */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     
-    /* Botón de WhatsApp */
     .wa-btn {
         display: block; width: 100%; 
         background-color: #25D366; 
@@ -147,28 +128,21 @@ st.markdown("""
     }
     .wa-btn:hover { background-color: #128C7E; transform: scale(1.02); }
     
-    /* Títulos Morados (Se ven bien en dark y light) */
+    /* Títulos generales: Se adaptan al modo oscuro/claro */
     h1, h2, h3 { color: #8A2BE2 !important; } 
-    
-    /* En modo oscuro, el morado muy oscuro no se ve, usamos un lila más brillante */
     @media (prefers-color-scheme: dark) {
         h1, h2, h3 { color: #D8B4FE !important; }
     }
     
-    /* Reseñas */
+    /* Review Box */
     .review-box {
-        background-color: #262730; /* Fondo oscuro compatible */
-        color: white;
+        background-color: #FFFDE7; color: black;
         padding: 15px; border-radius: 10px;
         border-left: 5px solid #FFC300; 
         font-size: 14px; margin-bottom: 10px;
     }
-    /* Ajuste para modo claro */
-    @media (prefers-color-scheme: light) {
-        .review-box {
-            background-color: #FFFDE7;
-            color: black;
-        }
+    @media (prefers-color-scheme: dark) {
+        .review-box { background-color: #262730; color: white; }
     }
     </style>
 """, unsafe_allow_html=True)
@@ -187,16 +161,14 @@ with col_header:
 
 st.divider()
 
-# --- 6. FORMULARIO PRINCIPAL ---
+# --- 6. FORMULARIO ---
 col_izq, col_der = st.columns([1.5, 1], gap="medium")
 
 with col_izq:
     st.subheader("1. 🚛 Elige tu Camión")
-    # Ya no usamos 'with st.container(border=True)' para evitar conflictos de color, usamos el nativo
     
     fecha = st.date_input("Fecha de Mudanza", datetime.date.today(), min_value=datetime.date.today())
     
-    # CAMIONES
     camiones = {
         "Seleccionar...": {"precio": 0, "foto": None},
         "Camión 2.5 Toneladas ($40)": {"precio": 40, "foto": "camion 2.5.jfif"},
@@ -210,8 +182,7 @@ with col_izq:
     if data_camion["foto"] and os.path.exists(data_camion["foto"]):
         st.image(data_camion["foto"], caption=f"Unidad: {camion_select}", use_container_width=True)
 
-    st.subheader("2. 📦 ¿Qué llevamos?")
-    # LISTA DETALLADA
+    st.subheader("2. 📦 Inventario")
     with st.expander("📝 Desglosar Inventario (Clic aquí)", expanded=True):
         lista_objetos = []
         c1, c2, c3, c4 = st.columns(4)
@@ -250,7 +221,6 @@ with col_izq:
     if otros: lista_objetos.append(f"Extras: {otros}")
     
     fotos = st.file_uploader("Sube fotos (Opcional)", accept_multiple_files=True, type=['jpg', 'png', 'jpeg'])
-    
     inv_txt = ", ".join(lista_objetos) if lista_objetos else "Inventario Básico"
 
 with col_der:
@@ -289,19 +259,20 @@ with col_der:
     
     total = p_camion + p_personal + p_materiales + costo_pisos
     
-    # --- TARJETA DE PRECIO (COLOR FIJO AMARILLO) ---
+    # --- TARJETA DE PRECIO (COLOR MORADO FUERTE FORZADO) ---
     st.write("")
+    
+    # Aquí usamos etiquetas DIV con !important para saltarnos el tema oscuro
     st.markdown(f"""
     <div style="
         background-color: #FFC300; 
-        color: #2E004E; 
         padding: 20px; 
         border-radius: 12px; 
         text-align: center; 
         border: 2px solid #2E004E;">
-        <h3 style="color: #2E004E !important; margin:0;">TOTAL ESTIMADO</h3>
-        <h1 style="color: #2E004E !important; font-size: 50px; margin:0;">${total:.2f}</h1>
-        <p style="color: #2E004E; margin:0;">Sujeto a confirmación</p>
+        <div style="color: #2E004E !important; font-size: 20px; font-weight: bold; margin-bottom: 5px;">TOTAL ESTIMADO</div>
+        <div style="color: #2E004E !important; font-size: 55px; font-weight: 900; line-height: 1;">${total:.2f}</div>
+        <div style="color: #2E004E !important; font-size: 14px; margin-top: 5px;">Sujeto a confirmación final</div>
     </div>
     """, unsafe_allow_html=True)
     
@@ -328,7 +299,6 @@ with col_der:
             )
             st.download_button("📄 Bajar PDF", data=pdf_bytes, file_name="Cotizacion.pdf", mime="application/pdf", use_container_width=True)
         except Exception as e:
-            # Si falla, mostramos el error limpio sin explotar
             st.error(f"Error PDF: {e}")
 
 # --- 7. RESEÑAS ---
