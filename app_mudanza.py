@@ -6,401 +6,332 @@ import base64
 import os
 import tempfile
 
-# --- CONFIGURACIÓN DE PÁGINA ---
+# --- 1. CONFIGURACIÓN INICIAL ---
 st.set_page_config(page_title="Mudanza Prime", page_icon="🚚", layout="wide")
 
-# --- COLORES DE MARCA ---
-COLOR_MORADO = "#2E004E"
-COLOR_MORADO_CLARO = "#5e2a85"
-COLOR_AMARILLO = "#FFC300"
-COLOR_FONDO = "#F9FAFB"
-COLOR_BLANCO = "#FFFFFF"
-# --- VARIABLE RECUPERADA (CORRECCIÓN DEL ERROR) ---
-NUMERO_WHATSAPP = "593998994518" 
+# --- VARIABLES GLOBALES ---
+NUMERO_WHATSAPP = "593998994518"  # ¡Corregido!
+COLOR_PRINCIPAL = "#2E004E"
+COLOR_SECUNDARIO = "#FFC300"
 
-# --- FUNCIÓN BASE64 ---
+# --- 2. FUNCIONES UTILITARIAS ---
+
 def get_image_base64(path):
+    """Convierte una imagen local a base64 para mostrarla en HTML/CSS"""
+    if not os.path.exists(path):
+        return None
     try:
-        if os.path.exists(path):
-            with open(path, "rb") as image_file:
-                encoded = base64.b64encode(image_file.read()).decode()
-            # Detectar extensión para el mime type correcto
-            if path.endswith(".webp"): mime = "image/webp"
-            elif path.endswith(".jpg") or path.endswith(".jpeg") or path.endswith(".jfif"): mime = "image/jpeg"
-            else: mime = "image/png"
-            return f"data:{mime};base64,{encoded}"
-        else:
-            return None
+        with open(path, "rb") as image_file:
+            encoded = base64.b64encode(image_file.read()).decode()
+        # Determinar tipo mime
+        if path.lower().endswith('.webp'): mime = 'image/webp'
+        elif path.lower().endswith('.jpg') or path.lower().endswith('.jpeg') or path.lower().endswith('.jfif'): mime = 'image/jpeg'
+        else: mime = 'image/png'
+        return f"data:{mime};base64,{encoded}"
     except Exception:
         return None
 
-# --- FUNCIÓN LIMPIEZA TEXTO ---
 def clean_text(text):
+    """Limpia caracteres especiales para el PDF"""
     return text.encode('latin-1', 'ignore').decode('latin-1')
 
-# --- CLASE PDF ---
+# --- 3. CLASE PARA PDF ---
 class PDF(FPDF):
     def header(self):
         if os.path.exists("logo.png"):
-            try:
-                self.image('logo.png', x=80, y=10, w=50) 
-                self.ln(25) 
+            try: self.image('logo.png', x=10, y=8, w=40)
             except: pass
-        self.set_font('Arial', 'B', 16)
-        self.set_text_color(46, 0, 78) 
+        self.set_font('Arial', 'B', 20)
+        self.cell(0, 10, clean_text('MUDANZA PRIME'), 0, 1, 'C')
         self.set_font('Arial', 'I', 10)
-        self.cell(0, 5, clean_text('Detalle de Cotización'), 0, 1, 'C')
+        self.cell(0, 10, clean_text('Cotización de Servicio'), 0, 1, 'C')
         self.ln(10)
+
     def footer(self):
         self.set_y(-15)
         self.set_font('Arial', 'I', 8)
-        self.set_text_color(128)
-        self.cell(0, 10, clean_text('Mudanza Prime | Precio estimado sujeto a disponibilidad'), 0, 0, 'C')
+        self.cell(0, 10, clean_text('Página %s - Mudanza Prime Guayaquil' % self.page_no()), 0, 0, 'C')
 
-def generar_pdf(fecha, camion, personal, materiales, accesos_txt, inventario_txt, total, pago_seleccionado, desglose, imagenes_usuario):
+def generar_pdf_completo(datos, desglose, total, imagenes):
     pdf = PDF()
     pdf.add_page()
-    pdf.set_font("Arial", size=11)
-    pdf.set_fill_color(245, 245, 245)
+    pdf.set_font("Arial", size=12)
     
-    # Bloque Principal
-    pdf.cell(0, 10, txt=clean_text(f"Fecha de Emisión: {datetime.date.today()}"), ln=1, fill=True)
+    # Datos Generales
+    pdf.set_fill_color(240, 240, 240)
+    pdf.cell(0, 10, clean_text(f"Fecha de Cotización: {datetime.date.today()}"), ln=1, fill=True)
     pdf.ln(5)
     
-    pdf.set_text_color(0, 0, 0)
-    pdf.cell(0, 8, txt=clean_text(f"📅 Fecha Mudanza: {fecha}"), ln=1)
-    nombre_camion = camion.split("-")[0]
-    pdf.cell(0, 8, txt=clean_text(f"🚚 Vehículo: {nombre_camion}"), ln=1)
-    pdf.cell(0, 8, txt=clean_text(f"🏢 Accesos: {accesos_txt}"), ln=1)
-    pdf.cell(0, 8, txt=clean_text(f"💳 Pago: {pago_seleccionado}"), ln=1)
+    pdf.cell(0, 8, clean_text(f"Cliente: Usuario Web"), ln=1)
+    pdf.cell(0, 8, clean_text(f"Fecha Mudanza: {datos['fecha']}"), ln=1)
+    pdf.cell(0, 8, clean_text(f"Camión: {datos['camion']}"), ln=1)
+    pdf.cell(0, 8, clean_text(f"Ruta: {datos['ruta']}"), ln=1)
+    pdf.cell(0, 8, clean_text(f"Forma de Pago: {datos['pago']}"), ln=1)
+    pdf.ln(5)
+    
+    # Inventario
+    pdf.set_font("Arial", 'B', 12)
+    pdf.cell(0, 10, "Resumen de Inventario:", ln=1)
+    pdf.set_font("Arial", size=11)
+    pdf.multi_cell(0, 6, clean_text(datos['inventario']))
     pdf.ln(5)
 
-    if len(inventario_txt) > 5:
-        pdf.set_font("Arial", 'B', 10)
-        pdf.cell(0, 8, clean_text("📦 Inventario Resumido:"), ln=1)
-        pdf.set_font("Arial", size=9)
-        pdf.multi_cell(0, 6, txt=clean_text(inventario_txt))
-        pdf.ln(5)
-        
-    # Tabla de Precios
-    pdf.set_font("Arial", 'B', 11)
-    pdf.set_fill_color(46, 0, 78)
-    pdf.set_text_color(255, 255, 255)
-    pdf.cell(140, 10, clean_text(" Concepto"), 1, 0, 'L', True)
-    pdf.cell(50, 10, clean_text("Valor "), 1, 1, 'R', True)
+    # Tabla de Costos
+    pdf.set_font("Arial", 'B', 12)
+    pdf.cell(140, 10, "Detalle", 1)
+    pdf.cell(50, 10, "Valor", 1, 1, 'C')
     
-    pdf.set_text_color(0, 0, 0)
-    pdf.set_font("Arial", size=11)
+    pdf.set_font("Arial", size=12)
+    pdf.cell(140, 10, clean_text(f"Vehículo Base"), 1)
+    pdf.cell(50, 10, f"${desglose['camion']:.2f}", 1, 1, 'R')
     
-    def fila(texto, valor):
-        pdf.cell(140, 10, clean_text(f" {texto}"), 1)
-        pdf.cell(50, 10, f"${valor:.2f} ", 1, 1, 'R')
-        
-    fila(f"Transporte Base ({nombre_camion})", desglose['camion'])
-    fila(f"Personal ({personal} ayudantes)", desglose['personal'])
-    fila("Recargo por Pisos/Escaleras", desglose['pisos'])
-    fila(f"Materiales ({materiales})", desglose['materiales'])
-    fila("Tarifa Ciudad (Guayaquil)", 0.00)
+    pdf.cell(140, 10, clean_text(f"Personal ({datos['personal']} ayudantes)"), 1)
+    pdf.cell(50, 10, f"${desglose['personal']:.2f}", 1, 1, 'R')
+    
+    pdf.cell(140, 10, clean_text(f"Accesos/Pisos"), 1)
+    pdf.cell(50, 10, f"${desglose['pisos']:.2f}", 1, 1, 'R')
+    
+    pdf.cell(140, 10, clean_text(f"Materiales ({datos['materiales']})"), 1)
+    pdf.cell(50, 10, f"${desglose['materiales']:.2f}", 1, 1, 'R')
     
     pdf.set_font("Arial", 'B', 14)
-    pdf.set_text_color(46, 0, 78)
-    pdf.cell(140, 15, clean_text(" TOTAL A PAGAR"), 1)
-    pdf.cell(50, 15, f"${total:.2f} ", 1, 1, 'R')
+    pdf.cell(140, 15, "TOTAL ESTIMADO", 1)
+    pdf.cell(50, 15, f"${total:.2f}", 1, 1, 'R')
 
-    # Fotos
-    if imagenes_usuario:
+    # Fotos Adjuntas
+    if imagenes:
         pdf.add_page()
-        pdf.set_font("Arial", 'B', 12)
-        pdf.cell(0, 10, clean_text("Registro Fotográfico"), 0, 1, 'L')
-        pdf.ln(5)
-        for img_file in imagenes_usuario:
+        pdf.cell(0, 10, "Evidencia Fotográfica:", ln=1)
+        for img_file in imagenes:
             with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
                 tmp.write(img_file.getvalue())
                 tmp_path = tmp.name
             try:
-                pdf.image(tmp_path, x=30, w=150)
+                pdf.image(tmp_path, x=20, w=150)
                 pdf.ln(5)
             except: pass
             if os.path.exists(tmp_path): os.remove(tmp_path)
 
     return pdf.output(dest='S').encode('latin-1', 'ignore')
 
-# --- CSS DE ALTA GAMA ---
-st.markdown(f"""
+# --- 4. CSS LIMPIO (SIN ROMPER TEXTOS) ---
+st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+    /* Ocultar menú de streamlit */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
     
-    .stApp {{ background-color: {COLOR_FONDO}; font-family: 'Poppins', sans-serif; }}
-    
-    div[data-baseweb="input"], div[data-baseweb="base-input"], div[data-baseweb="select"] {{
-        background-color: white !important;
-        border: 1px solid #e0e0e0 !important;
-        border-radius: 12px !important;
-        color: #333 !important;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.02) !important;
-    }}
-    
-    div[data-testid="stNumberInputContainer"] {{
-        background-color: white !important;
-        border-radius: 12px !important;
-    }}
-    
-    .logo-container {{
-        display: flex; justify-content: center; align-items: center;
-        padding: 10px 0 30px 0;
-    }}
-    .logo-container img {{
-        max-width: 260px; height: auto;
-        filter: drop-shadow(0px 8px 15px rgba(46, 0, 78, 0.15));
-        transition: transform 0.3s ease;
-    }}
-    .logo-container img:hover {{ transform: scale(1.02); }}
-
-    .control-panel {{
+    /* Contenedores con estilo de tarjeta limpia */
+    .stExpander, div[data-testid="stForm"] {
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         background-color: white;
-        padding: 25px;
-        border-radius: 20px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.04);
-        margin-bottom: 25px;
-        border: 1px solid #f0f0f0;
-    }}
+    }
     
-    h1, h2, h3, h4, h5 {{ color: {COLOR_MORADO} !important; font-weight: 600 !important; }}
-    
-    .hero-card {{
-        border-radius: 16px;
-        padding: 20px;
-        color: white;
-        height: 140px;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-        transition: transform 0.2s;
-    }}
-    .hero-card:hover {{ transform: translateY(-3px); }}
-    
-    .card-purple {{ background: linear-gradient(135deg, {COLOR_MORADO} 0%, {COLOR_MORADO_CLARO} 100%); }}
-    .card-yellow {{ background: linear-gradient(135deg, {COLOR_AMARILLO} 0%, #FFD54F 100%); color: {COLOR_MORADO} !important; }}
-    .card-yellow div {{ color: {COLOR_MORADO} !important; }}
-    
-    .action-btn {{
-        background: linear-gradient(145deg, #ffffff, #f5f5f5);
-        border-radius: 16px;
-        padding: 15px;
-        text-align: center;
-        box-shadow: 5px 5px 10px #e6e6e6, -5px -5px 10px #ffffff;
-        transition: all 0.2s;
-        border: 1px solid white;
-        text-decoration: none;
+    /* Encabezados Morados */
+    h1, h2, h3 {
+        color: #2E004E !important;
+    }
+
+    /* Botón de WhatsApp destacado */
+    .wa-btn {
         display: block;
-    }}
-    .action-btn:hover {{
-        transform: translateY(-2px);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.05);
-        border-color: {COLOR_AMARILLO};
-    }}
-    
-    .stDownloadButton > button {{
-        background-image: linear-gradient(to right, {COLOR_MORADO}, {COLOR_MORADO_CLARO}) !important;
-        color: white !important;
-        border: none !important;
-        border-radius: 12px !important;
-        padding: 10px 20px !important;
-        font-weight: 600 !important;
         width: 100%;
-        box-shadow: 0 4px 10px rgba(46, 0, 78, 0.2);
-    }}
-    .stDownloadButton > button:hover {{
-        opacity: 0.9;
-        box-shadow: 0 6px 15px rgba(46, 0, 78, 0.3);
-    }}
-
-    .footer-custom {{
-        text-align: center; font-size: 11px; color: #aaa; padding: 40px 0 20px 0; border-top: 1px solid #eaeaea; margin-top: 50px; letter-spacing: 1px; text-transform: uppercase;
-    }}
+        background-color: #25D366;
+        color: white;
+        text-align: center;
+        padding: 15px;
+        border-radius: 10px;
+        text-decoration: none;
+        font-weight: bold;
+        font-size: 18px;
+        box-shadow: 0 4px 10px rgba(37, 211, 102, 0.4);
+    }
+    .wa-btn:hover {
+        background-color: #128C7E;
+        color: white;
+    }
     
-    .vehicle-preview {{
-        width: 100%; border-radius: 15px; margin-top: 15px; border: none; box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-    }}
-
-    header {{ visibility: hidden; }} footer {{ visibility: hidden; }}
+    /* Reseñas */
+    .review-box {
+        background-color: #f9f9f9;
+        padding: 15px;
+        border-left: 5px solid #FFC300;
+        margin-bottom: 10px;
+        border-radius: 5px;
+    }
     </style>
 """, unsafe_allow_html=True)
 
-# --- LOGO CENTRADO ---
-img_base64 = get_image_base64("logo.png")
-if img_base64:
-    st.markdown(f"""<div class="logo-container"><img src="{img_base64}" alt="Mudanza Prime"></div>""", unsafe_allow_html=True)
-else:
-    st.markdown(f"""<h1 style='text-align:center; font-size:40px; margin-bottom:20px;'>MUDANZA PRIME</h1>""", unsafe_allow_html=True)
+# --- 5. ENCABEZADO Y LOGO ---
+col_logo, col_titulo = st.columns([1, 4])
+with col_logo:
+    # Intenta cargar logo, si no usa emoji
+    if os.path.exists("logo.png"):
+        st.image("logo.png", width=150)
+    else:
+        st.markdown("# 🚚")
 
-# --- PANEL PRINCIPAL ---
-st.markdown(f"<div class='control-panel'>", unsafe_allow_html=True)
-st.markdown("### ⚙️ Personaliza tu Servicio")
+with col_titulo:
+    st.title("Cotizador Mudanza Prime")
+    st.markdown("**Cotiza tu mudanza profesional en segundos. Sin compromisos.**")
 
-c1, c2, c3, c4 = st.columns(4) 
-with c1:
-    st.markdown("**1. ¿Cuándo y en qué?**")
-    fecha_seleccionada = st.date_input("Fecha de Mudanza", datetime.date.today(), min_value=datetime.date.today(), label_visibility="collapsed")
-    
-    # --- DICCIONARIO ACTUALIZADO CON TUS IMÁGENES LOCALES ---
-    vehiculos = {
-        "👉 Elige Vehículo": {"precio": 0, "img": "❓", "foto_local": None, "url_fallback": "https://cdn-icons-png.flaticon.com/512/7542/7542676.png"},
+st.divider()
+
+# --- 6. CUERPO PRINCIPAL (2 COLUMNAS PARA MEJOR ORDEN) ---
+col_izq, col_der = st.columns([1.2, 0.8], gap="large")
+
+with col_izq:
+    st.subheader("1. 📅 Fecha y Vehículo")
+    with st.container(border=True):
+        fecha = st.date_input("Fecha de Mudanza", datetime.date.today(), min_value=datetime.date.today())
         
-        "Camión 2.5 Toneladas - $40": {
-            "precio": 40, "img": "🚛", 
-            "foto_local": "camion 2.5.jfif",  # Tu archivo
-            "url_fallback": "https://sc04.alicdn.com/kf/H856d4701297e4125866164223f03b290E.jpg"
-        },
-        
-        "Camión 3.5 Toneladas - $50": {
-            "precio": 50, "img": "🚚", 
-            "foto_local": "camion 3.5.webp",  # Tu archivo
-            "url_fallback": "https://img.freepik.com/foto-gratis/camion-blanco-aislado-sobre-blanco_123583-128.jpg"
-        },
-        
-        "Camión 6 Toneladas - $60": {
-            "precio": 60, "img": "🚛🚛", 
-            "foto_local": "camion 6.jpg",     # Tu archivo
-            "url_fallback": "https://img.freepik.com/foto-gratis/camion-carga-blanco_1112-588.jpg"
+        # Diccionario de Camiones (Con tus imágenes locales)
+        camiones = {
+            "Seleccionar...": {"precio": 0, "foto": None},
+            "Camión 2.5 Toneladas ($40)": {"precio": 40, "foto": "camion 2.5.jfif"},
+            "Camión 3.5 Toneladas ($50)": {"precio": 50, "foto": "camion 3.5.webp"},
+            "Camión 6 Toneladas ($60)": {"precio": 60, "foto": "camion 6.jpg"},
         }
-    }
-    
-    seleccion = st.selectbox("Vehículo", list(vehiculos.keys()), label_visibility="collapsed")
-    dato_camion = vehiculos[seleccion]
-    
-    # Lógica para mostrar la imagen: Primero busca la local, si falla usa la de internet
-    img_html = ""
-    if dato_camion["foto_local"]:
-        # Intenta cargar la imagen local
-        b64_local = get_image_base64(dato_camion["foto_local"])
-        if b64_local:
-            img_src = b64_local
-        else:
-            img_src = dato_camion["url_fallback"]
-    else:
-        img_src = dato_camion["url_fallback"]
         
-    st.markdown(f"""<div style="text-align:center;"><img src="{img_src}" class="vehicle-preview" style="max-height:120px; object-fit:contain;"></div>""", unsafe_allow_html=True)
-
-with c2:
-    st.markdown("**2. Personal de Carga**")
-    personal = st.slider("Ayudantes", 0, 10, 0, label_visibility="collapsed")
-    st.markdown(f"<div style='text-align:center; font-weight:bold; color:{COLOR_MORADO};'>{personal} Ayudantes</div>", unsafe_allow_html=True)
-    st.caption("Tarifa: $15 c/u")
-
-with c3:
-    st.markdown("**3. Pisos y Accesos**")
-    col_sal, col_lleg = st.columns(2)
-    with col_sal:
-        st.caption("Salida")
-        piso_salida = st.selectbox("S", ["PB", "1", "2", "3", "4", "5+"], key="ps")
-        asc_salida = st.checkbox("Ascensor", key="as")
-    with col_lleg:
-        st.caption("Llegada")
-        piso_llegada = st.selectbox("Ll", ["PB", "1", "2", "3", "4", "5+"], key="pl")
-        asc_llegada = st.checkbox("Ascensor", key="all")
-
-with c4:
-    st.markdown("**4. Materiales**")
-    cajas = st.number_input("📦 Cajas ($1.50)", 0, 100, 0) 
-    rollos = st.number_input("🗞️ Rollos ($20)", 0, 20, 0) 
-
-st.markdown("</div>", unsafe_allow_html=True)
-
-# --- INVENTARIO ---
-with st.expander("📝 Detallar Inventario (Opcional)", expanded=False):
-    lista_objetos = []
-    col_i1, col_i2 = st.columns(2)
-    with col_i1:
-        st.markdown("**Electrodomésticos y Muebles**")
-        refri = st.selectbox("Refrigeradora", ["No", "Pequeña", "Grande (Side by Side)"])
-        if refri != "No": lista_objetos.append(f"Refri {refri}")
-        cocina = st.checkbox("Cocina")
-        if cocina: lista_objetos.append("Cocina")
-        lavadora = st.checkbox("Lavadora")
-        if lavadora: lista_objetos.append("Lavadora")
-        juego_sala = st.checkbox("Juego de Sala")
-        if juego_sala: lista_objetos.append("Juego Sala")
-        juego_comedor = st.checkbox("Juego Comedor")
-        if juego_comedor: lista_objetos.append("Juego Comedor")
-    with col_i2:
-        st.markdown("**Dormitorio y Otros**")
-        camas = st.number_input("Camas", 0, 10, 0)
-        if camas: lista_objetos.append(f"{camas} Camas")
-        colchones = st.number_input("Colchones", 0, 10, 0)
-        if colchones: lista_objetos.append(f"{colchones} Colchones")
+        camion_select = st.selectbox("Selecciona el tamaño del camión", list(camiones.keys()))
+        data_camion = camiones[camion_select]
         
-        st.markdown("**Fotos de Referencia**")
-        imagenes_usuario = st.file_uploader("Subir fotos", type=['png', 'jpg'], accept_multiple_files=True, label_visibility="collapsed")
+        # Mostrar foto del camión si se selecciona
+        if data_camion["foto"] and os.path.exists(data_camion["foto"]):
+            st.image(data_camion["foto"], caption=f"Vehículo Referencial: {camion_select}", use_container_width=True)
+        elif camion_select != "Seleccionar...":
+            st.info("Imagen del vehículo no disponible, pero el servicio está garantizado.")
 
-inventario_final = ", ".join(lista_objetos) if lista_objetos else "Básico"
+    st.subheader("2. 📦 Inventario y Materiales")
+    with st.container(border=True):
+        st.info("Describe brevemente qué llevas o sube fotos.")
+        
+        # Lista rápida
+        c1, c2 = st.columns(2)
+        with c1:
+            refri = st.checkbox("Refrigeradora")
+            cocina = st.checkbox("Cocina")
+            lavadora = st.checkbox("Lavadora")
+        with c2:
+            sala = st.checkbox("Juego de Sala")
+            comedor = st.checkbox("Juego de Comedor")
+            cama = st.checkbox("Cama(s)")
+            
+        otros_items = st.text_area("Otros objetos (Cajas, espejos, etc.)", placeholder="Ej: 10 cajas, 1 bicicleta, 2 televisores...")
+        
+        fotos = st.file_uploader("📸 Sube fotos de tus cosas (Opcional)", accept_multiple_files=True, type=['png', 'jpg', 'jpeg'])
+        
+        st.write("---")
+        st.markdown("**Materiales de Embalaje**")
+        mc1, mc2 = st.columns(2)
+        with mc1:
+            cant_cajas = st.number_input("Cajas de Cartón ($1.50 c/u)", min_value=0, step=1)
+        with mc2:
+            cant_rollos = st.number_input("Rollos de Plástico ($20.00 c/u)", min_value=0, step=1)
 
-# --- CÁLCULOS ---
-def calc_pisos(p, asc): return 0 if asc or p in ["PB", "1"] else (10 if p in ["2", "3"] else 20)
-if dato_camion["precio"] == 0: precio_pisos = 0
-else: precio_pisos = calc_pisos(piso_salida, asc_salida) + calc_pisos(piso_llegada, asc_llegada)
+with col_der:
+    st.subheader("3. 📍 Ruta y Personal")
+    with st.container(border=True):
+        # Personal
+        num_ayudantes = st.slider("Número de Ayudantes ($15 c/u)", 0, 8, 0)
+        
+        st.write("---")
+        # Accesos
+        st.markdown("**Pisos / Escaleras**")
+        sc1, sc2 = st.columns(2)
+        with sc1:
+            piso_salida = st.selectbox("Piso Salida", ["PB", "1", "2", "3", "4+"])
+            asc_salida = st.checkbox("Ascensor (Salida)")
+        with sc2:
+            piso_llegada = st.selectbox("Piso Llegada", ["PB", "1", "2", "3", "4+"])
+            asc_llegada = st.checkbox("Ascensor (Llegada)")
 
-precio_camion = dato_camion["precio"]
-precio_personal = personal * 15
-precio_materiales = (cajas * 1.5) + (rollos * 20)
-total = precio_camion + precio_personal + precio_materiales + precio_pisos
+    # --- CÁLCULOS EN TIEMPO REAL ---
+    # Lógica de precios
+    p_camion = data_camion["precio"]
+    p_personal = num_ayudantes * 15
+    p_materiales = (cant_cajas * 1.5) + (cant_rollos * 20)
+    
+    # Pisos: Si no hay ascensor y es piso > 1, cobra extra
+    costo_pisos = 0
+    if not asc_salida and piso_salida not in ["PB", "1"]: costo_pisos += 10
+    if not asc_llegada and piso_llegada not in ["PB", "1"]: costo_pisos += 10
+    
+    total = p_camion + p_personal + p_materiales + costo_pisos
 
-# --- TARJETAS DE RESULTADO ---
-st.markdown("### 📊 Resumen de Cotización")
-k1, k2, k3 = st.columns(3)
-with k1:
-    if total == 0:
-        st.markdown(f"""<div class="hero-card card-purple" style="opacity:0.7;"><div><div class="card-label">EMPIEZA AQUÍ</div><div class="card-amount">$0.00</div></div><div>Selecciona un vehículo</div></div>""", unsafe_allow_html=True)
-    else:
-        st.markdown(f"""<div class="hero-card card-purple"><div><div class="card-label">TOTAL ESTIMADO</div><div class="card-amount">${total:.2f}</div></div><div style="font-size:12px;">Incluye recargos y servicios</div></div>""", unsafe_allow_html=True)
+    st.write("")
+    st.write("")
+    
+    # --- TARJETA DE TOTAL (ESTILO LIMPIO) ---
+    st.markdown(f"""
+    <div style="background-color: {COLOR_PRINCIPAL}; color: white; padding: 20px; border-radius: 15px; text-align: center;">
+        <h3 style="color:white !important; margin:0;">TOTAL ESTIMADO</h3>
+        <h1 style="color:#FFC300 !important; font-size: 50px; margin:0;">${total:.2f}</h1>
+        <p style="font-size: 12px; opacity: 0.8;">Incluye transporte y servicios seleccionados</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.write("")
+    
+    # --- MÉTODO DE PAGO Y CONFIRMACIÓN ---
+    st.markdown("#### ✅ Finalizar")
+    metodo_pago = st.selectbox("Forma de Pago", ["Efectivo", "Transferencia Bancaria", "Deuna!"])
+    confirmacion = st.checkbox("Entiendo que el precio final depende del inventario real.")
 
-with k2:
-    st.markdown(f"""<div class="hero-card card-yellow"><div><div class="card-label">VEHÍCULO</div><div class="card-amount" style="font-size:24px;">{seleccion.split('-')[0]}</div></div><div>{dato_camion['img']}</div></div>""", unsafe_allow_html=True)
+    # Construcción de textos para reporte
+    inv_str = f"Refri: {'Sí' if refri else 'No'}, Cocina: {'Sí' if cocina else 'No'}, Sala: {'Sí' if sala else 'No'}. Extras: {otros_items}"
+    ruta_str = f"De {piso_salida} a {piso_llegada}"
+    materiales_str = f"{cant_cajas} Cajas, {cant_rollos} Rollos"
 
-with k3:
-    fecha_fmt = fecha_seleccionada.strftime("%d %b %Y")
-    st.markdown(f"""<div class="hero-card" style="background:white; color:#333; border:1px solid #eee;"><div><div class="card-label" style="color:#999;">FECHA RESERVA</div><div class="card-amount" style="color:{COLOR_MORADO};">{fecha_fmt}</div></div><div>📅</div></div>""", unsafe_allow_html=True)
+    if confirmacion and total > 0:
+        # 1. Mensaje WhatsApp
+        msg_wa = f"*Hola Mudanza Prime!* 🚚\nQuiero reservar:\n📅 *Fecha:* {fecha}\n🚛 *Vehículo:* {camion_select}\n📦 *Inventario:* {inv_str}\n👷 *Ayudantes:* {num_ayudantes}\n💰 *Total:* ${total:.2f}\n📷 *Fotos:* {'Sí adjuntas' if fotos else 'No'}"
+        link_wa = f"https://wa.me/{NUMERO_WHATSAPP}?text={urllib.parse.quote(msg_wa)}"
+        
+        st.markdown(f"""<a href="{link_wa}" target="_blank" class="wa-btn">📲 RESERVAR AHORA</a>""", unsafe_allow_html=True)
+        
+        # 2. PDF
+        st.write("")
+        pdf_bytes = generar_pdf_completo(
+            {'fecha': fecha, 'camion': camion_select, 'ruta': ruta_str, 'pago': metodo_pago, 'inventario': inv_str, 'personal': num_ayudantes, 'materiales': materiales_str},
+            {'camion': p_camion, 'personal': p_personal, 'materiales': p_materiales, 'pisos': costo_pisos},
+            total, fotos
+        )
+        st.download_button("📄 Descargar Cotización PDF", data=pdf_bytes, file_name="Cotizacion_Mudanza.pdf", mime="application/pdf", use_container_width=True)
+        
+    elif total == 0:
+        st.warning("Selecciona un camión para ver el precio.")
+
+# --- 7. SECCIÓN DE RESEÑAS Y CONFIANZA ---
+st.divider()
+st.subheader("⭐ Lo que dicen nuestros clientes")
+c_rev1, c_rev2, c_rev3 = st.columns(3)
+
+with c_rev1:
+    st.markdown("""
+    <div class="review-box">
+        <b>María P.</b> ⭐⭐⭐⭐⭐<br>
+        "Llegaron súper puntuales y trataron mis muebles con mucho cuidado. Recomendados."
+    </div>
+    """, unsafe_allow_html=True)
+
+with c_rev2:
+    st.markdown("""
+    <div class="review-box">
+        <b>Carlos A.</b> ⭐⭐⭐⭐⭐<br>
+        "El camión de 3.5 toneladas estaba impecable. El personal muy educado."
+    </div>
+    """, unsafe_allow_html=True)
+
+with c_rev3:
+    st.markdown("""
+    <div class="review-box">
+        <b>Empresa S.A.</b> ⭐⭐⭐⭐⭐<br>
+        "Nos ayudaron con una mudanza de oficina compleja. Todo salió perfecto."
+    </div>
+    """, unsafe_allow_html=True)
 
 st.write("")
-
-# --- FINALIZAR ---
-c_izq, c_der = st.columns([1.5, 1])
-
-with c_izq:
-    st.markdown("##### 💳 Método de Pago")
-    pago = st.radio("Pago", ["Efectivo", "Transferencia", "Deuna!"], horizontal=True, label_visibility="collapsed")
-    
-    st.markdown("##### ✅ Confirmación")
-    check = st.checkbox("Acepto que el valor es estimado y sujeto a disponibilidad.")
-    
-    if check and total > 0:
-        pdf_bytes = generar_pdf(
-            fecha_fmt, seleccion, personal, f"{cajas} cajas, {rollos} rollos", 
-            f"{piso_salida}->{piso_llegada}", inventario_final, total, pago, 
-            {'camion': precio_camion, 'personal': precio_personal, 'materiales': precio_materiales, 'pisos': precio_pisos},
-            imagenes_usuario
-        )
-        st.download_button("📄 Descargar PDF Oficial", data=pdf_bytes, file_name="Cotizacion.pdf", mime="application/pdf")
-
-with c_der:
-    st.write("")
-    st.write("")
-    txt_fotos = "📸 Con Fotos" if imagenes_usuario else ""
-    msg = f"Hola *Mudanza Prime*. Deseo reservar:\n🚚 {seleccion}\n📅 {fecha_fmt}\n💰 Total: ${total:.2f}\n💳 Pago: {pago}\n{txt_fotos}"
-    lnk = f"https://wa.me/{NUMERO_WHATSAPP}?text={urllib.parse.quote(msg)}"
-    
-    if check and total > 0:
-        st.markdown(f"""
-        <a href="{lnk}" target="_blank" style="text-decoration:none;">
-            <div style="background: linear-gradient(145deg, #25D366, #128C7E); color:white; padding:15px; border-radius:15px; text-align:center; box-shadow:0 5px 15px rgba(37, 211, 102, 0.3); font-weight:bold; transition:transform 0.2s;">
-                📲 RESERVAR POR WHATSAPP
-            </div>
-        </a>
-        """, unsafe_allow_html=True)
-    else:
-        st.info("Completa los datos para reservar.")
-
-# --- FOOTER ---
-st.markdown(f"""<div class="footer-custom">© 2025 MUDANZA PRIME | GUAYAQUIL EC<br>DISEÑO PREMIUM</div>""", unsafe_allow_html=True)
+st.caption("© 2025 Mudanza Prime Guayaquil | Todos los derechos reservados.")
