@@ -10,18 +10,27 @@ import tempfile
 st.set_page_config(page_title="Mudanza Prime", page_icon="🚚", layout="wide")
 
 # --- COLORES DE MARCA ---
-COLOR_MORADO = "#2E004E"     # Color principal elegante
-COLOR_MORADO_CLARO = "#5e2a85" # Para degradados
-COLOR_AMARILLO = "#FFC300"   # Acento
-COLOR_FONDO = "#F9FAFB"      # Fondo gris muy muy suave (moderno)
+COLOR_MORADO = "#2E004E"
+COLOR_MORADO_CLARO = "#5e2a85"
+COLOR_AMARILLO = "#FFC300"
+COLOR_FONDO = "#F9FAFB"
 COLOR_BLANCO = "#FFFFFF"
+# --- VARIABLE RECUPERADA (CORRECCIÓN DEL ERROR) ---
+NUMERO_WHATSAPP = "593998994518" 
 
 # --- FUNCIÓN BASE64 ---
 def get_image_base64(path):
     try:
-        with open(path, "rb") as image_file:
-            encoded = base64.b64encode(image_file.read()).decode()
-        return f"data:image/png;base64,{encoded}"
+        if os.path.exists(path):
+            with open(path, "rb") as image_file:
+                encoded = base64.b64encode(image_file.read()).decode()
+            # Detectar extensión para el mime type correcto
+            if path.endswith(".webp"): mime = "image/webp"
+            elif path.endswith(".jpg") or path.endswith(".jpeg") or path.endswith(".jfif"): mime = "image/jpeg"
+            else: mime = "image/png"
+            return f"data:{mime};base64,{encoded}"
+        else:
+            return None
     except Exception:
         return None
 
@@ -116,58 +125,48 @@ def generar_pdf(fecha, camion, personal, materiales, accesos_txt, inventario_txt
 
     return pdf.output(dest='S').encode('latin-1', 'ignore')
 
-# --- CSS DE ALTA GAMA (AQUÍ ESTÁ LA MAGIA) ---
+# --- CSS DE ALTA GAMA ---
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
     
-    /* FONDO Y FUENTE GLOBAL */
-    .stApp {{
-        background-color: {COLOR_FONDO};
-        font-family: 'Poppins', sans-serif;
-    }}
+    .stApp {{ background-color: {COLOR_FONDO}; font-family: 'Poppins', sans-serif; }}
     
-    /* INPUTS MODERNOS (REDONDOS Y LIMPIOS) */
     div[data-baseweb="input"], div[data-baseweb="base-input"], div[data-baseweb="select"] {{
         background-color: white !important;
         border: 1px solid #e0e0e0 !important;
-        border-radius: 12px !important; /* Bordes más redondos */
+        border-radius: 12px !important;
         color: #333 !important;
         box-shadow: 0 2px 5px rgba(0,0,0,0.02) !important;
     }}
     
-    /* CAJAS DE NÚMEROS */
     div[data-testid="stNumberInputContainer"] {{
         background-color: white !important;
         border-radius: 12px !important;
     }}
     
-    /* LOGO FLOTANTE */
     .logo-container {{
         display: flex; justify-content: center; align-items: center;
         padding: 10px 0 30px 0;
     }}
     .logo-container img {{
         max-width: 260px; height: auto;
-        filter: drop-shadow(0px 8px 15px rgba(46, 0, 78, 0.15)); /* Sombra morada suave */
+        filter: drop-shadow(0px 8px 15px rgba(46, 0, 78, 0.15));
         transition: transform 0.3s ease;
     }}
     .logo-container img:hover {{ transform: scale(1.02); }}
 
-    /* TARJETAS PRINCIPALES (NEUMORFISMO SUAVE) */
     .control-panel {{
         background-color: white;
         padding: 25px;
         border-radius: 20px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.04); /* Sombra difusa elegante */
+        box-shadow: 0 10px 30px rgba(0,0,0,0.04);
         margin-bottom: 25px;
         border: 1px solid #f0f0f0;
     }}
     
-    /* TITULOS */
     h1, h2, h3, h4, h5 {{ color: {COLOR_MORADO} !important; font-weight: 600 !important; }}
     
-    /* TARJETAS DE PRECIO (GRADIENTES) */
     .hero-card {{
         border-radius: 16px;
         padding: 20px;
@@ -181,16 +180,10 @@ st.markdown(f"""
     }}
     .hero-card:hover {{ transform: translateY(-3px); }}
     
-    .card-purple {{
-        background: linear-gradient(135deg, {COLOR_MORADO} 0%, {COLOR_MORADO_CLARO} 100%);
-    }}
-    .card-yellow {{
-        background: linear-gradient(135deg, {COLOR_AMARILLO} 0%, #FFD54F 100%);
-        color: {COLOR_MORADO} !important;
-    }}
+    .card-purple {{ background: linear-gradient(135deg, {COLOR_MORADO} 0%, {COLOR_MORADO_CLARO} 100%); }}
+    .card-yellow {{ background: linear-gradient(135deg, {COLOR_AMARILLO} 0%, #FFD54F 100%); color: {COLOR_MORADO} !important; }}
     .card-yellow div {{ color: {COLOR_MORADO} !important; }}
     
-    /* BOTONES DE ACCIÓN (GRADIENTES Y BRILLO) */
     .action-btn {{
         background: linear-gradient(145deg, #ffffff, #f5f5f5);
         border-radius: 16px;
@@ -208,7 +201,6 @@ st.markdown(f"""
         border-color: {COLOR_AMARILLO};
     }}
     
-    /* BOTÓN DE DESCARGA PDF */
     .stDownloadButton > button {{
         background-image: linear-gradient(to right, {COLOR_MORADO}, {COLOR_MORADO_CLARO}) !important;
         color: white !important;
@@ -224,25 +216,12 @@ st.markdown(f"""
         box-shadow: 0 6px 15px rgba(46, 0, 78, 0.3);
     }}
 
-    /* FOOTER MINIMALISTA */
     .footer-custom {{
-        text-align: center;
-        font-size: 11px;
-        color: #aaa;
-        padding: 40px 0 20px 0;
-        border-top: 1px solid #eaeaea;
-        margin-top: 50px;
-        letter-spacing: 1px;
-        text-transform: uppercase;
+        text-align: center; font-size: 11px; color: #aaa; padding: 40px 0 20px 0; border-top: 1px solid #eaeaea; margin-top: 50px; letter-spacing: 1px; text-transform: uppercase;
     }}
     
-    /* IMAGEN PREVIEW REDONDEADA */
     .vehicle-preview {{
-        width: 100%; 
-        border-radius: 15px; 
-        margin-top: 15px; 
-        border: none;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        width: 100%; border-radius: 15px; margin-top: 15px; border: none; box-shadow: 0 5px 15px rgba(0,0,0,0.05);
     }}
 
     header {{ visibility: hidden; }} footer {{ visibility: hidden; }}
@@ -256,7 +235,7 @@ if img_base64:
 else:
     st.markdown(f"""<h1 style='text-align:center; font-size:40px; margin-bottom:20px;'>MUDANZA PRIME</h1>""", unsafe_allow_html=True)
 
-# --- PANEL PRINCIPAL (CARD EFECTO PAPEL) ---
+# --- PANEL PRINCIPAL ---
 st.markdown(f"<div class='control-panel'>", unsafe_allow_html=True)
 st.markdown("### ⚙️ Personaliza tu Servicio")
 
@@ -265,17 +244,45 @@ with c1:
     st.markdown("**1. ¿Cuándo y en qué?**")
     fecha_seleccionada = st.date_input("Fecha de Mudanza", datetime.date.today(), min_value=datetime.date.today(), label_visibility="collapsed")
     
+    # --- DICCIONARIO ACTUALIZADO CON TUS IMÁGENES LOCALES ---
     vehiculos = {
-        "👉 Elige Vehículo": {"precio": 0, "img": "❓", "foto": "https://cdn-icons-png.flaticon.com/512/7542/7542676.png"},
-        "Furgoneta (Pequeña) - $30": {"precio": 30, "img": "🚐", "foto": "https://img.freepik.com/foto-gratis/furgoneta-reparto-blanco-sobre-fondo-blanco_123583-118.jpg"},
-        "Camión 2 Toneladas - $40": {"precio": 40, "img": "🚛", "foto": "https://sc04.alicdn.com/kf/H856d4701297e4125866164223f03b290E.jpg"},
-        "Camión 3.5 Toneladas - $50": {"precio": 50, "img": "🚚", "foto": "https://img.freepik.com/foto-gratis/camion-blanco-aislado-sobre-blanco_123583-128.jpg"},
-        "Camión 6 Toneladas - $60": {"precio": 60, "img": "🚛🚛", "foto": "https://img.freepik.com/foto-gratis/camion-carga-blanco_1112-588.jpg"}
+        "👉 Elige Vehículo": {"precio": 0, "img": "❓", "foto_local": None, "url_fallback": "https://cdn-icons-png.flaticon.com/512/7542/7542676.png"},
+        
+        "Camión 2.5 Toneladas - $40": {
+            "precio": 40, "img": "🚛", 
+            "foto_local": "camion 2.5.jfif",  # Tu archivo
+            "url_fallback": "https://sc04.alicdn.com/kf/H856d4701297e4125866164223f03b290E.jpg"
+        },
+        
+        "Camión 3.5 Toneladas - $50": {
+            "precio": 50, "img": "🚚", 
+            "foto_local": "camion 3.5.webp",  # Tu archivo
+            "url_fallback": "https://img.freepik.com/foto-gratis/camion-blanco-aislado-sobre-blanco_123583-128.jpg"
+        },
+        
+        "Camión 6 Toneladas - $60": {
+            "precio": 60, "img": "🚛🚛", 
+            "foto_local": "camion 6.jpg",     # Tu archivo
+            "url_fallback": "https://img.freepik.com/foto-gratis/camion-carga-blanco_1112-588.jpg"
+        }
     }
+    
     seleccion = st.selectbox("Vehículo", list(vehiculos.keys()), label_visibility="collapsed")
     dato_camion = vehiculos[seleccion]
     
-    st.markdown(f"""<div style="text-align:center;"><img src="{dato_camion['foto']}" class="vehicle-preview" style="max-height:80px; object-fit:contain;"></div>""", unsafe_allow_html=True)
+    # Lógica para mostrar la imagen: Primero busca la local, si falla usa la de internet
+    img_html = ""
+    if dato_camion["foto_local"]:
+        # Intenta cargar la imagen local
+        b64_local = get_image_base64(dato_camion["foto_local"])
+        if b64_local:
+            img_src = b64_local
+        else:
+            img_src = dato_camion["url_fallback"]
+    else:
+        img_src = dato_camion["url_fallback"]
+        
+    st.markdown(f"""<div style="text-align:center;"><img src="{img_src}" class="vehicle-preview" style="max-height:120px; object-fit:contain;"></div>""", unsafe_allow_html=True)
 
 with c2:
     st.markdown("**2. Personal de Carga**")
