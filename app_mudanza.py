@@ -6,21 +6,18 @@ import os
 import tempfile
 import base64
 
-# --- 1. CONFIGURACIÓN INICIAL ---
+# --- 1. CONFIGURACIÓN ---
 st.set_page_config(page_title="Mudanza Prime", page_icon="🚚", layout="wide")
-
-# --- VARIABLES ---
 NUMERO_WHATSAPP = "593998994518"
 
-# --- 2. FUNCIONES UTILITARIAS ---
+# --- 2. FUNCIONES ---
 def clean_text(text):
-    """Limpia caracteres para PDF"""
     if not isinstance(text, str): text = str(text)
     replacements = {
-        '€': 'EUR', '’': "'", '–': "-", '—': "-",
+        '€': 'EUR', '’': "'", '–': "-", '—': "-", 'ñ': 'n', 'Ñ': 'N',
         'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u',
         'Á': 'A', 'É': 'E', 'Í': 'I', 'Ó': 'O', 'Ú': 'U',
-        'ñ': 'n', 'Ñ': 'N', 'ü': 'u', 'Ü': 'U', '⚠️': ''
+        '⚠️': '', '❄️': '', '🛋️': '', '🍽️': '', '🛏️': ''
     }
     for old, new in replacements.items():
         text = text.replace(old, new)
@@ -37,45 +34,41 @@ class PDF(FPDF):
         self.cell(0, 10, clean_text('MUDANZA PRIME'), 0, 1, 'C')
         self.set_font('Arial', 'I', 10)
         self.set_text_color(100, 100, 100)
-        self.cell(0, 5, clean_text('Cotización Inteligente'), 0, 1, 'C')
+        self.cell(0, 5, clean_text('Cotización Detallada'), 0, 1, 'C')
         self.ln(15)
 
     def footer(self):
         self.set_y(-15)
         self.set_font('Arial', 'I', 8)
         self.set_text_color(128)
-        self.cell(0, 10, clean_text('Mudanza Prime Guayaquil - Expertos en Logística'), 0, 0, 'C')
+        self.cell(0, 10, clean_text('Mudanza Prime Guayaquil'), 0, 0, 'C')
 
 def generar_pdf_completo(datos, desglose, total, imagenes):
     pdf = PDF()
-    
-    # --- PÁGINA 1: COTIZACIÓN ---
     pdf.add_page()
     pdf.set_font("Arial", size=11)
     
-    # Bloque Gris
+    # Encabezado Datos
     pdf.set_fill_color(240, 240, 240)
     pdf.set_text_color(0, 0, 0)
     pdf.cell(0, 10, clean_text(f"Fecha Emisión: {datetime.date.today()}"), ln=1, fill=True)
     pdf.ln(5)
     
-    # Datos
     pdf.cell(0, 7, clean_text(f"Fecha Servicio: {datos['fecha']}"), ln=1)
     pdf.cell(0, 7, clean_text(f"Vehículo: {datos['camion']}"), ln=1)
     pdf.cell(0, 7, clean_text(f"Ruta: {datos['ruta']}"), ln=1)
-    pdf.cell(0, 7, clean_text(f"Pago: {datos['pago']}"), ln=1)
     pdf.ln(5)
     
     # Inventario
     pdf.set_font("Arial", 'B', 11)
-    pdf.cell(0, 8, "Inventario Declarado:", ln=1)
+    pdf.cell(0, 8, "Detalle de Carga:", ln=1)
     pdf.set_font("Arial", size=10)
     pdf.multi_cell(0, 5, clean_text(datos['inventario']))
     pdf.ln(5)
 
     # Costos
     pdf.set_font("Arial", 'B', 11)
-    pdf.cell(140, 8, "Detalle", 1)
+    pdf.cell(140, 8, "Concepto", 1)
     pdf.cell(40, 8, "Valor", 1, 1, 'C')
     
     pdf.set_font("Arial", size=11)
@@ -83,7 +76,7 @@ def generar_pdf_completo(datos, desglose, total, imagenes):
     pdf.cell(40, 8, f"${desglose['camion']:.2f}", 1, 1, 'R')
     pdf.cell(140, 8, clean_text(f"Personal ({datos['personal']} ayudantes)"), 1)
     pdf.cell(40, 8, f"${desglose['personal']:.2f}", 1, 1, 'R')
-    pdf.cell(140, 8, clean_text(f"Accesos y Pisos"), 1)
+    pdf.cell(140, 8, clean_text(f"Accesos/Pisos"), 1)
     pdf.cell(40, 8, f"${desglose['pisos']:.2f}", 1, 1, 'R')
     pdf.cell(140, 8, clean_text(f"Materiales"), 1)
     pdf.cell(40, 8, f"${desglose['materiales']:.2f}", 1, 1, 'R')
@@ -92,39 +85,12 @@ def generar_pdf_completo(datos, desglose, total, imagenes):
     pdf.set_text_color(46, 0, 78)
     pdf.cell(140, 12, "TOTAL ESTIMADO", 1)
     pdf.cell(40, 12, f"${total:.2f}", 1, 1, 'R')
-    
-    # --- PÁGINA 2: CHECKLIST DE VALOR (NUEVO) ---
-    pdf.add_page()
-    pdf.set_text_color(0,0,0)
-    pdf.set_font("Arial", 'B', 16)
-    pdf.cell(0, 10, clean_text("🎁 TU GUÍA DE MUDANZA PRIME"), 0, 1, 'C')
-    pdf.ln(5)
-    
-    pdf.set_font("Arial", size=11)
-    checklist = """
-    Para que tu experiencia sea perfecta, te recomendamos:
-    
-    1. SEMANA PREVIA:
-       [ ] Consigue cajas medianas (son mas faciles de cargar).
-       [ ] Separa lo que NO vas a llevar (dona o vende).
-       [ ] Etiqueta cada caja con el nombre de la habitacion destino.
-    
-    2. EL DIA ANTERIOR:
-       [ ] Descongela la refrigeradora 24 horas antes.
-       [ ] Guarda joyas, dinero y documentos importantes en tu bolso personal.
-       [ ] Desconecta lavadora y secadora.
-    
-    3. EL DIA DE LA MUDANZA:
-       [ ] Reserva parqueo para el camion (al menos 10 metros).
-       [ ] Ten a la mano llaves de la nueva casa.
-       [ ] ¡Relajate! Nosotros nos encargamos del peso pesado.
-    """
-    pdf.multi_cell(0, 7, clean_text(checklist))
 
     # Fotos
     if imagenes:
         pdf.add_page()
         pdf.set_font("Arial", 'B', 12)
+        pdf.set_text_color(0,0,0)
         pdf.cell(0, 10, "Fotos Adjuntas:", ln=1)
         for img_file in imagenes:
             with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
@@ -138,7 +104,7 @@ def generar_pdf_completo(datos, desglose, total, imagenes):
 
     return pdf.output(dest='S').encode('latin-1', 'ignore')
 
-# --- 4. CSS ---
+# --- 4. ESTILOS ---
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -159,101 +125,108 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- 5. ENCABEZADO ---
+# --- 5. UI PRINCIPAL ---
 col_logo, col_header = st.columns([1, 4])
 with col_logo:
     if os.path.exists("logo.png"): st.image("logo.png", width=120)
     else: st.header("🚚")
 with col_header:
     st.title("Mudanza Prime")
-    st.markdown("**Cotizador Inteligente** | Guayaquil")
+    st.markdown("**Cotizador de Alta Precisión** | Guayaquil")
 st.divider()
 
-# --- 6. LOGICA ---
 col_izq, col_der = st.columns([1.5, 1], gap="medium")
-
-# Variables para lógica de recomendación
-puntos_carga = 0 
+puntos_carga = 0 # Variable para calcular volumen
 
 with col_izq:
     st.subheader("1. 🚛 Vehículo")
     fecha = st.date_input("Fecha", datetime.date.today(), min_value=datetime.date.today())
     
     camiones = {
-        "Seleccionar...": {"precio": 0, "capacidad": 0, "foto": None},
-        "Camión 2.5 Toneladas ($40)": {"precio": 40, "capacidad": 20, "foto": "camion 2.5.jfif"},
-        "Camión 3.5 Toneladas ($50)": {"precio": 50, "capacidad": 40, "foto": "camion 3.5.webp"},
-        "Camión 6 Toneladas ($60)": {"precio": 60, "capacidad": 70, "foto": "camion 6.jpg"},
+        "Seleccionar...": {"precio": 0, "foto": None},
+        "Camión 2.5 Ton ($40)": {"precio": 40, "foto": "camion 2.5.jfif"},
+        "Camión 3.5 Ton ($50)": {"precio": 50, "foto": "camion 3.5.webp"},
+        "Camión 6 Ton ($60)": {"precio": 60, "foto": "camion 6.jpg"},
     }
     camion_select = st.selectbox("Elige Camión", list(camiones.keys()))
     data_camion = camiones[camion_select]
     if data_camion["foto"] and os.path.exists(data_camion["foto"]):
         st.image(data_camion["foto"], caption=f"Unidad: {camion_select}", use_container_width=True)
 
-    st.subheader("2. 📦 Inventario (Suma Puntos)")
-    with st.expander("📝 Desglosar Inventario", expanded=True):
+    st.subheader("2. 📦 Inventario Detallado")
+    st.info("Especifica tamaños y materiales para un precio exacto.")
+    
+    with st.expander("📝 CLIC AQUÍ PARA LLENAR INVENTARIO", expanded=True):
         lista_objetos = []
-        c1, c2, c3, c4 = st.columns(4)
         
+        # SECCIÓN 1: DORMITORIO (Camas y Tamaños)
+        st.markdown("##### 🛏️ Dormitorios")
+        c1, c2 = st.columns(2)
         with c1:
-            st.markdown("**❄️ Cocina**")
-            refri = st.selectbox("Refri", ["No", "Pequeña", "Grande"])
-            if refri == "Pequeña": puntos_carga += 4; lista_objetos.append("Refri Peq.")
-            if refri == "Grande": puntos_carga += 8; lista_objetos.append("Refri Grande")
-            
-            cocina = st.number_input("Cocina", 0, 5, 0)
-            if cocina: puntos_carga += (cocina * 3); lista_objetos.append(f"{cocina} Cocina")
-            
-            lavadora = st.number_input("Lavadora", 0, 5, 0)
-            if lavadora: puntos_carga += (lavadora * 3); lista_objetos.append(f"{lavadora} Lavadora")
-
+            camas_std = st.number_input("Camas 1.5 / 2 Plazas", 0, 10, 0)
+            if camas_std: puntos_carga += (camas_std * 5); lista_objetos.append(f"{camas_std} Camas Std")
         with c2:
-            st.markdown("**🛋️ Sala**")
-            sala = st.number_input("Juego Sala", 0, 5, 0)
-            if sala: puntos_carga += (sala * 10); lista_objetos.append(f"{sala} Juego Sala")
-            
-            tv = st.number_input("TVs", 0, 5, 0)
-            if tv: puntos_carga += (tv * 1); lista_objetos.append(f"{tv} TVs")
-            
-        with c3:
-            st.markdown("**🍽️ Comedor**")
-            sillas = st.number_input("Sillas", 0, 12, 0)
-            if sillas: puntos_carga += (sillas * 0.5); lista_objetos.append(f"{sillas} Sillas")
-            mesa = st.checkbox("Mesa Comedor")
-            if mesa: puntos_carga += 5; lista_objetos.append("Mesa Comedor")
-            
-        with c4:
-            st.markdown("**🛏️ Cuartos**")
-            camas = st.number_input("Camas", 0, 10, 0)
-            if camas: puntos_carga += (camas * 8); lista_objetos.append(f"{camas} Camas")
-            
-            aires = st.number_input("Aires", 0, 10, 0)
-            if aires: puntos_carga += (aires * 1); lista_objetos.append(f"{aires} Aires")
+            camas_king = st.number_input("Camas Queen / King (Grandes)", 0, 5, 0)
+            if camas_king: puntos_carga += (camas_king * 10); lista_objetos.append(f"{camas_king} Camas KING/Queen")
 
-    otros = st.text_area("Cajas / Otros", placeholder="Ej: 15 cajas, bicicleta...")
-    if others := otros.strip():
-        # Estimación simple: 1 punto por cada 10 caracteres de texto (heurística)
-        puntos_carga += len(others) / 10 
-        lista_objetos.append(f"Extras: {others}")
-        
+        # SECCIÓN 2: LÍNEA BLANCA (Tipos de Refri)
+        st.write("---")
+        st.markdown("##### ❄️ Línea Blanca")
+        lb1, lb2 = st.columns(2)
+        with lb1:
+            tipo_refri = st.selectbox("Tipo de Refrigeradora", ["Ninguna", "Pequeña/Mediana", "Grande (2 Puertas Verticales)", "Industrial"])
+            if tipo_refri == "Pequeña/Mediana": puntos_carga += 5; lista_objetos.append("Refri Mediana")
+            if tipo_refri == "Grande (2 Puertas Verticales)": puntos_carga += 12; lista_objetos.append("Refri Side-by-Side (Grande)")
+        with lb2:
+            lavadora = st.checkbox("Lavadora")
+            if lavadora: puntos_carga += 4; lista_objetos.append("Lavadora")
+            secadora = st.checkbox("Secadora")
+            if secadora: puntos_carga += 4; lista_objetos.append("Secadora")
+
+        # SECCIÓN 3: COMEDOR (Materiales)
+        st.write("---")
+        st.markdown("##### 🍽️ Comedor")
+        cm1, cm2 = st.columns(2)
+        with cm1:
+            material_mesa = st.selectbox("Material de Mesa", ["Sin Mesa", "Madera/MDF", "Vidrio (Delicado)", "Mármol/Piedra (Pesado)"])
+            if material_mesa == "Madera/MDF": puntos_carga += 6; lista_objetos.append("Mesa Madera")
+            if material_mesa == "Vidrio (Delicado)": puntos_carga += 8; lista_objetos.append("Mesa Vidrio (Delicada)")
+            if material_mesa == "Mármol/Piedra (Pesado)": puntos_carga += 15; lista_objetos.append("Mesa MÁRMOL (Pesada)")
+        with cm2:
+            sillas = st.number_input("Cantidad de Sillas", 0, 20, 0)
+            if sillas: puntos_carga += (sillas * 0.5); lista_objetos.append(f"{sillas} Sillas")
+
+        # SECCIÓN 4: SALA
+        st.write("---")
+        st.markdown("##### 🛋️ Sala")
+        sl1, sl2 = st.columns(2)
+        with sl1:
+            sala_l = st.checkbox("Mueble en L (Grande)")
+            if sala_l: puntos_carga += 10; lista_objetos.append("Sala en L")
+        with sl2:
+            sofas = st.number_input("Sofás Individuales", 0, 5, 0)
+            if sofas: puntos_carga += (sofas * 4); lista_objetos.append(f"{sofas} Sofás")
+
+    otros = st.text_area("Cajas y Otros", placeholder="Ej: 20 cajas, 1 caminadora, 1 piano...")
+    if otros: puntos_carga += 5; lista_objetos.append(f"Extras: {otros}")
+    
     fotos = st.file_uploader("Fotos (Opcional)", accept_multiple_files=True, type=['jpg', 'png', 'jpeg'])
     inv_txt = ", ".join(lista_objetos) if lista_objetos else "Básico"
 
-    # --- LÓGICA DE RECOMENDACIÓN INTELIGENTE ---
+    # ALERTAS INTELIGENTES
     st.write("")
-    if puntos_carga > 0:
-        if puntos_carga > 45 and "6 Toneladas" not in camion_select:
-            st.warning("⚠️ **Sugerencia:** Tienes mucha carga. Te recomendamos el **Camión de 6 Toneladas** para que todo entre seguro.")
-        elif puntos_carga > 25 and "3.5 Toneladas" not in camion_select and "6 Toneladas" not in camion_select:
-            st.info("ℹ️ **Consejo:** Para esa cantidad de muebles, el **Camión de 3.5 Toneladas** es el ideal.")
+    if "Mármol" in inv_txt or "King" in inv_txt or "Grande" in inv_txt:
+        st.warning("⚠️ **Atención:** Llevas objetos pesados o muy grandes. El sistema recomienda al menos 2 a 3 ayudantes.")
+    
+    if puntos_carga > 40 and "6 Ton" not in camion_select:
+        st.error("🚨 **Alerta de Espacio:** Tienes mucha carga para un camión pequeño. Te sugerimos el **Camión de 6 Toneladas**.")
 
 with col_der:
     st.subheader("3. 👷 Costos")
     
     st.markdown("**Ayudantes ($15 c/u)**")
-    st.caption("Incluye herramientas básicas para desarmado simple.")
     num_ayudantes = st.slider("Cant.", 0, 8, 0, label_visibility="collapsed")
-    st.write(f"Seleccionado: {num_ayudantes}")
+    st.caption(f"Seleccionado: {num_ayudantes}")
     
     st.write("---")
     st.markdown("**Accesos**")
@@ -312,13 +285,13 @@ with col_der:
                 {'camion': p_camion, 'personal': p_personal, 'materiales': p_materiales, 'pisos': costo_pisos},
                 total, fotos
             )
-            st.download_button("📄 Bajar Cotización + Checklist", data=pdf_bytes, file_name="Cotizacion_Mudanza.pdf", mime="application/pdf", use_container_width=True)
+            st.download_button("📄 Bajar PDF Detallado", data=pdf_bytes, file_name="Cotizacion_Mudanza.pdf", mime="application/pdf", use_container_width=True)
         except Exception as e:
             st.error(f"Error PDF: {e}")
 
 st.divider()
 st.subheader("⭐ Opiniones")
 r1, r2, r3 = st.columns(3)
-with r1: st.markdown("""<div class="review-box"><b>María P.</b> ⭐⭐⭐⭐⭐<br>"Excelente servicio."</div>""", unsafe_allow_html=True)
-with r2: st.markdown("""<div class="review-box"><b>Carlos G.</b> ⭐⭐⭐⭐⭐<br>"Puntuales y rápidos."</div>""", unsafe_allow_html=True)
-with r3: st.markdown("""<div class="review-box"><b>Ana L.</b> ⭐⭐⭐⭐⭐<br>"Recomendados."</div>""", unsafe_allow_html=True)
+with r1: st.markdown("""<div class="review-box"><b>María P.</b> ⭐⭐⭐⭐⭐<br>"Mis muebles de vidrio llegaron intactos."</div>""", unsafe_allow_html=True)
+with r2: st.markdown("""<div class="review-box"><b>Carlos G.</b> ⭐⭐⭐⭐⭐<br>"Excelente manejo de mi refrigeradora grande."</div>""", unsafe_allow_html=True)
+with r3: st.markdown("""<div class="review-box"><b>Ana L.</b> ⭐⭐⭐⭐⭐<br>"Rápidos y seguros."</div>""", unsafe_allow_html=True)
