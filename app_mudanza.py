@@ -10,12 +10,13 @@ import base64
 st.set_page_config(page_title="Mudanza Prime", page_icon="🚚", layout="wide")
 NUMERO_WHATSAPP = "593998994518"
 
-# --- 2. ZONAS ---
+# --- 2. ZONAS Y SEGURIDAD ---
 ZONAS_ROJAS = [
     "trinitaria", "guasmo", "malvinas", "socio vivienda", "entrada de la 8", 
     "monte sinai", "monte sinaí", "bastion", "bastión", "flor de bastion", 
     "prosperina", "suburbio", "cisne", "mascotas", "el fortin", "fortín"
 ]
+
 def validar_zona_segura(texto):
     if not texto: return True
     texto_lower = texto.lower()
@@ -47,7 +48,7 @@ class PDF(FPDF):
         self.cell(0, 10, clean_text('MUDANZA PRIME'), 0, 1, 'C')
         self.set_font('Arial', 'I', 10)
         self.set_text_color(100, 100, 100)
-        self.cell(0, 5, clean_text('Cotización con Ruta Detallada'), 0, 1, 'C')
+        self.cell(0, 5, clean_text('Cotización de Servicio'), 0, 1, 'C')
         self.ln(15)
 
     def footer(self):
@@ -68,7 +69,7 @@ def generar_pdf_completo(datos, desglose, total, imagenes, tiene_video):
     pdf.ln(5)
     
     # Datos Generales
-    pdf.cell(0, 7, clean_text(f"Fecha Servicio: {datos['fecha']}"), ln=1)
+    pdf.cell(0, 7, clean_text(f"Fecha Servicio: {datos['fecha']} ({datos['horario']})"), ln=1)
     pdf.cell(0, 7, clean_text(f"Vehículo: {datos['camion']}"), ln=1)
     
     pdf.set_font("Arial", 'B', 11)
@@ -85,7 +86,7 @@ def generar_pdf_completo(datos, desglose, total, imagenes, tiene_video):
     
     texto_inv = datos['inventario']
     if tiene_video:
-        texto_inv += "\n[IMPORTANTE] EL CLIENTE TIENE UN VIDEO PARA ENVIAR POR WHATSAPP."
+        texto_inv += "\n[!] EL CLIENTE ADJUNTÓ VIDEO DE REFERENCIA."
         
     pdf.multi_cell(0, 5, clean_text(texto_inv))
     pdf.ln(5)
@@ -102,7 +103,7 @@ def generar_pdf_completo(datos, desglose, total, imagenes, tiene_video):
     pdf.cell(40, 8, f"${desglose['personal']:.2f}", 1, 1, 'R')
     
     if desglose['parada_extra'] > 0:
-        pdf.cell(140, 8, clean_text(f"Parada Adicional (Multidestino)"), 1)
+        pdf.cell(140, 8, clean_text(f"Parada Adicional"), 1)
         pdf.cell(40, 8, f"${desglose['parada_extra']:.2f}", 1, 1, 'R')
 
     pdf.cell(140, 8, clean_text(f"Accesos/Pisos"), 1)
@@ -115,7 +116,7 @@ def generar_pdf_completo(datos, desglose, total, imagenes, tiene_video):
     pdf.cell(140, 12, "TOTAL ESTIMADO", 1)
     pdf.cell(40, 12, f"${total:.2f}", 1, 1, 'R')
 
-    # Fotos (Incrustadas en el PDF)
+    # Fotos
     if imagenes:
         pdf.add_page()
         pdf.set_font("Arial", 'B', 12)
@@ -144,22 +145,17 @@ st.markdown("""
         margin-top: 5px; text-decoration: none; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
     }
     .wa-btn:hover { background-color: #128C7E; transform: scale(1.02); }
-    
     h1, h2, h3 { color: #8A2BE2 !important; } 
     @media (prefers-color-scheme: dark) { h1, h2, h3 { color: #D8B4FE !important; } }
-    
     .review-box {
         background-color: #FFFDE7; color: black; padding: 15px; border-radius: 10px;
         border-left: 5px solid #FFC300; font-size: 14px; margin-bottom: 10px;
     }
     @media (prefers-color-scheme: dark) { .review-box { background-color: #262730; color: white; } }
-    
     .alerta-zona {
         background-color: #FFEBEE; border: 2px solid #D32F2F; color: #D32F2F; padding: 15px; 
         border-radius: 10px; font-weight: bold; text-align: center; margin-bottom: 20px;
     }
-    
-    /* Nuevo estilo para la instrucción de adjuntar */
     .instruccion-adjunto {
         background-color: #E8F5E9; color: #1B5E20; padding: 10px; 
         border-radius: 8px; text-align: center; font-size: 14px; 
@@ -184,7 +180,7 @@ col_ruta1, col_ruta2 = st.columns(2)
 with col_ruta1: origen = st.text_input("¿Desde dónde salimos?", placeholder="Ej: Ceibos")
 with col_ruta2: destino = st.text_input("¿Hacia dónde vamos?", placeholder="Ej: Vía a la Costa")
 
-parada_extra = st.checkbox("➕ Agregar una parada adicional (+$15.00)")
+parada_extra = st.checkbox("➕ Agregar parada extra (+$15.00)")
 texto_parada = ""
 costo_parada = 0
 if parada_extra:
@@ -192,12 +188,8 @@ if parada_extra:
     costo_parada = 15.00
 
 # VALIDACIÓN
-es_seguro_origen = validar_zona_segura(origen)
-es_seguro_destino = validar_zona_segura(destino)
-es_seguro_parada = validar_zona_segura(texto_parada)
 bloqueo = False
-
-if not (es_seguro_origen and es_seguro_destino and es_seguro_parada):
+if not (validar_zona_segura(origen) and validar_zona_segura(destino) and validar_zona_segura(texto_parada)):
     bloqueo = True
     st.markdown("""<div class="alerta-zona">⛔ ZONA FUERA DE COBERTURA ESTÁNDAR. CONTÁCTANOS POR WHATSAPP.</div>""", unsafe_allow_html=True)
     lnk = f"https://wa.me/{NUMERO_WHATSAPP}?text=Consulta especial por zona de riesgo."
@@ -208,22 +200,35 @@ if not bloqueo:
     puntos_carga = 0 
 
     with col_izq:
-        st.subheader("1. 🚛 Vehículo")
-        fecha = st.date_input("Fecha", datetime.date.today(), min_value=datetime.date.today())
+        st.subheader("1. 🚛 Vehículo y Horario")
         
+        # HORARIO (NUEVO)
+        col_fecha, col_hora = st.columns(2)
+        with col_fecha:
+            fecha = st.date_input("Fecha", datetime.date.today(), min_value=datetime.date.today())
+        with col_hora:
+            horario = st.selectbox("Bloque Horario", ["Mañana (8:00 - 12:00)", "Tarde (13:00 - 17:00)"])
+
+        # LISTA DE CAMIONES (CON FURGONETA RESTAURADA)
         camiones = {
             "Seleccionar...": {"precio": 0, "foto": None},
+            "Furgoneta (Pequeña) - $30": {"precio": 30, "foto": "furgoneta.jpg"},
             "Camión 2.5 Ton ($40)": {"precio": 40, "foto": "camion 2.5.jfif"},
             "Camión 3.5 Ton ($50)": {"precio": 50, "foto": "camion 3.5.webp"},
             "Camión 6 Ton ($60)": {"precio": 60, "foto": "camion 6.jpg"},
         }
-        camion_select = st.selectbox("Elige Camión", list(camiones.keys()))
+        camion_select = st.selectbox("Elige Vehículo", list(camiones.keys()))
         data_camion = camiones[camion_select]
-        if data_camion["foto"] and os.path.exists(data_camion["foto"]):
-            st.image(data_camion["foto"], caption=f"Unidad: {camion_select}", use_container_width=True)
+        
+        # Mostrar foto
+        if data_camion["foto"]:
+            if os.path.exists(data_camion["foto"]):
+                st.image(data_camion["foto"], caption=f"Unidad: {camion_select}", use_container_width=True)
+            elif camion_select != "Seleccionar...":
+                # Fallback si no hay foto pero seleccionó camión
+                st.info(f"Vista referencial: {camion_select}")
 
         st.subheader("2. 📦 Inventario & Video")
-        
         with st.expander("📝 LISTA DE OBJETOS", expanded=True):
             lista_objetos = []
             
@@ -266,7 +271,6 @@ if not bloqueo:
 
         st.write("---")
         st.markdown("##### 📹 Subir Evidencia")
-        st.info("Sube fotos o un video corto. Esto nos ayuda a darte el mejor precio.")
         video_file = st.file_uploader("Video (MP4/MOV) - Max 30seg", type=['mp4', 'mov', 'avi'])
         fotos = st.file_uploader("Fotos (JPG/PNG)", accept_multiple_files=True, type=['jpg', 'png'])
         
@@ -278,7 +282,6 @@ if not bloqueo:
 
     with col_der:
         st.subheader("3. 👷 Costos")
-        
         num_ayudantes = st.slider("Ayudantes ($15 c/u)", 0, 8, 0)
         
         st.write("---")
@@ -322,31 +325,23 @@ if not bloqueo:
         pago = st.selectbox("Pago", ["Efectivo", "Transferencia", "Deuna!"])
         confirmar = st.checkbox("Acepto términos.")
         
-        # Construcción Ruta
         ruta_final = f"{origen} -> {destino}"
         if parada_extra: ruta_final += f" (Parada: {texto_parada})"
         
         if confirmar and total > 0:
-            # Mensaje WhatsApp
             txt_vid = "📹 ¡TENGO UN VIDEO PARA ENVIAR!" if tiene_video else "No"
-            msg = f"*SOLICITUD* 🚚\n📍 {ruta_final}\n📅 {fecha}\n💰 ${total:.2f}\n📦 {inv_txt}\n{txt_vid}"
+            msg = f"*SOLICITUD* 🚚\n📍 {ruta_final}\n📅 {fecha} ({horario})\n🚛 {camion_select}\n💰 ${total:.2f}\n📦 {inv_txt}\n{txt_vid}"
             lnk = f"https://wa.me/{NUMERO_WHATSAPP}?text={urllib.parse.quote(msg)}"
             
-            # Instrucción Visual
             if tiene_video or fotos:
-                st.markdown("""
-                <div class="instruccion-adjunto">
-                    👆 <b>¡IMPORTANTE!</b><br>
-                    Al abrir WhatsApp, recuerda adjuntar tu <b>VIDEO o PDF</b> para que lo veamos.
-                </div>
-                """, unsafe_allow_html=True)
+                st.markdown("""<div class="instruccion-adjunto">👆 <b>¡IMPORTANTE!</b><br>Al abrir WhatsApp, recuerda adjuntar tu <b>VIDEO o PDF</b>.</div>""", unsafe_allow_html=True)
             
             st.markdown(f"""<a href="{lnk}" target="_blank" class="wa-btn">📲 RESERVAR WHATSAPP</a>""", unsafe_allow_html=True)
             
             st.write("")
             try:
                 pdf_bytes = generar_pdf_completo(
-                    {'fecha': fecha, 'camion': camion_select, 'ruta': ruta_final, 'pago': pago, 'inventario': inv_txt, 'personal': num_ayudantes},
+                    {'fecha': fecha, 'horario': horario, 'camion': camion_select, 'ruta': ruta_final, 'pago': pago, 'inventario': inv_txt, 'personal': num_ayudantes},
                     {'camion': p_camion, 'personal': p_personal, 'materiales': p_mat, 'pisos': p_pisos, 'parada_extra': costo_parada},
                     total, fotos, tiene_video
                 )
