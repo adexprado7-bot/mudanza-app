@@ -31,7 +31,7 @@ def clean_text(text):
         '€': 'EUR', '’': "'", '–': "-", '—': "-", 'ñ': 'n', 'Ñ': 'N',
         'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u',
         'Á': 'A', 'É': 'E', 'Í': 'I', 'Ó': 'O', 'Ú': 'U',
-        '⚠️': '', '🚨': '', '⛔': '', '📍': '', '📹': ''
+        '⚠️': '', '🚨': '', '⛔': '', '📍': '', '📹': '', '🛡️': '', '💡': ''
     }
     for old, new in replacements.items():
         text = text.replace(old, new)
@@ -48,7 +48,7 @@ class PDF(FPDF):
         self.cell(0, 10, clean_text('MUDANZA PRIME'), 0, 1, 'C')
         self.set_font('Arial', 'I', 10)
         self.set_text_color(100, 100, 100)
-        self.cell(0, 5, clean_text('Cotización de Servicio'), 0, 1, 'C')
+        self.cell(0, 5, clean_text('Cotización Profesional'), 0, 1, 'C')
         self.ln(15)
 
     def footer(self):
@@ -105,6 +105,10 @@ def generar_pdf_completo(datos, desglose, total, imagenes, tiene_video):
     if desglose['parada_extra'] > 0:
         pdf.cell(140, 8, clean_text(f"Parada Adicional"), 1)
         pdf.cell(40, 8, f"${desglose['parada_extra']:.2f}", 1, 1, 'R')
+        
+    if desglose['seguro'] > 0:
+        pdf.cell(140, 8, clean_text(f"Seguro de Carga (Protección)"), 1)
+        pdf.cell(40, 8, f"${desglose['seguro']:.2f}", 1, 1, 'R')
 
     pdf.cell(140, 8, clean_text(f"Accesos/Pisos"), 1)
     pdf.cell(40, 8, f"${desglose['pisos']:.2f}", 1, 1, 'R')
@@ -161,6 +165,10 @@ st.markdown("""
         border-radius: 8px; text-align: center; font-size: 14px; 
         margin-bottom: 5px; border: 1px dashed #4CAF50;
     }
+    .caja-sugerencia {
+        background-color: #E3F2FD; color: #0D47A1; padding: 10px; border-radius: 8px; 
+        border-left: 5px solid #2196F3; font-size: 14px; margin-bottom: 10px;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -198,18 +206,16 @@ if not (validar_zona_segura(origen) and validar_zona_segura(destino) and validar
 if not bloqueo:
     col_izq, col_der = st.columns([1.5, 1], gap="medium")
     puntos_carga = 0 
+    cajas_estimadas = 0 # Variable para la calculadora
 
     with col_izq:
         st.subheader("1. 🚛 Vehículo y Horario")
-        
-        # HORARIO (NUEVO)
         col_fecha, col_hora = st.columns(2)
         with col_fecha:
             fecha = st.date_input("Fecha", datetime.date.today(), min_value=datetime.date.today())
         with col_hora:
             horario = st.selectbox("Bloque Horario", ["Mañana (8:00 - 12:00)", "Tarde (13:00 - 17:00)"])
 
-        # LISTA DE CAMIONES (CON FURGONETA RESTAURADA)
         camiones = {
             "Seleccionar...": {"precio": 0, "foto": None},
             "Furgoneta (Pequeña) - $30": {"precio": 30, "foto": "furgoneta.jpg"},
@@ -219,14 +225,8 @@ if not bloqueo:
         }
         camion_select = st.selectbox("Elige Vehículo", list(camiones.keys()))
         data_camion = camiones[camion_select]
-        
-        # Mostrar foto
-        if data_camion["foto"]:
-            if os.path.exists(data_camion["foto"]):
-                st.image(data_camion["foto"], caption=f"Unidad: {camion_select}", use_container_width=True)
-            elif camion_select != "Seleccionar...":
-                # Fallback si no hay foto pero seleccionó camión
-                st.info(f"Vista referencial: {camion_select}")
+        if data_camion["foto"] and os.path.exists(data_camion["foto"]):
+            st.image(data_camion["foto"], caption=f"Unidad: {camion_select}", use_container_width=True)
 
         st.subheader("2. 📦 Inventario & Video")
         with st.expander("📝 LISTA DE OBJETOS", expanded=True):
@@ -236,10 +236,16 @@ if not bloqueo:
             c1, c2 = st.columns(2)
             with c1:
                 camas_std = st.number_input("Camas 1.5 / 2 Plazas", 0, 10, 0)
-                if camas_std: puntos_carga += (camas_std * 5); lista_objetos.append(f"{camas_std} Camas Std")
+                if camas_std: 
+                    puntos_carga += (camas_std * 5)
+                    cajas_estimadas += (camas_std * 2) # Ropa de cama
+                    lista_objetos.append(f"{camas_std} Camas Std")
             with c2:
                 camas_king = st.number_input("Camas Queen / King", 0, 5, 0)
-                if camas_king: puntos_carga += (camas_king * 10); lista_objetos.append(f"{camas_king} Camas KING")
+                if camas_king: 
+                    puntos_carga += (camas_king * 10)
+                    cajas_estimadas += (camas_king * 3)
+                    lista_objetos.append(f"{camas_king} Camas KING")
 
             st.write("---")
             st.markdown("##### 🍽️ Comedor")
@@ -248,7 +254,9 @@ if not bloqueo:
                 mat_mesa = st.selectbox("Mesa", ["Sin Mesa", "Madera", "Vidrio", "Mármol"])
                 if mat_mesa != "Sin Mesa": 
                     pts = 15 if "Mármol" in mat_mesa else (8 if "Vidrio" in mat_mesa else 6)
-                    puntos_carga += pts; lista_objetos.append(f"Mesa {mat_mesa}")
+                    puntos_carga += pts
+                    cajas_estimadas += 2 # Adornos mesa
+                    lista_objetos.append(f"Mesa {mat_mesa}")
             with cm2:
                 sillas = st.number_input("Sillas", 0, 20, 0)
                 if sillas: puntos_carga += (sillas * 0.5); lista_objetos.append(f"{sillas} Sillas")
@@ -261,13 +269,26 @@ if not bloqueo:
                 if refri != "No": 
                     pts = 12 if "Side" in refri else 5
                     puntos_carga += pts; lista_objetos.append(f"Refri {refri}")
+                
+                # Cocina suele tener ollas, platos = mas cajas
+                cocina_item = st.checkbox("Cocina (Estufa)")
+                if cocina_item:
+                    cajas_estimadas += 4 # Ollas y sartenes
+                    lista_objetos.append("Cocina")
+                    
             with lb2:
                 st.markdown("##### 🛋️ Sala")
                 sala = st.checkbox("Juego de Sala")
-                if sala: puntos_carga += 10; lista_objetos.append("Juego Sala")
+                if sala: 
+                    puntos_carga += 10
+                    cajas_estimadas += 2 # Adornos sala
+                    lista_objetos.append("Juego Sala")
 
-        otros = st.text_area("Cajas / Otros", placeholder="Ej: 20 cajas...")
+        otros = st.text_area("Cajas / Otros", placeholder="Ej: Libros, Ropa, Juguetes...")
         if otros: puntos_carga += 5; lista_objetos.append(f"Extras: {otros}")
+        
+        # Ajuste base de cajas
+        if cajas_estimadas > 0: cajas_estimadas += 2 # Margen de error
 
         st.write("---")
         st.markdown("##### 📹 Subir Evidencia")
@@ -296,9 +317,24 @@ if not bloqueo:
             
         st.write("---")
         st.markdown("**Materiales**")
+        
+        # CALCULADORA INTELIGENTE
+        if cajas_estimadas > 5:
+            st.markdown(f"""
+            <div class="caja-sugerencia">
+                💡 <b>Sugerencia Inteligente:</b><br>
+                Por tu inventario (cocina, cuartos), estimamos que necesitarás unas <b>{cajas_estimadas} cajas</b>.
+            </div>
+            """, unsafe_allow_html=True)
+        
         c_m1, c_m2 = st.columns(2)
         with c_m1: c_cajas = st.number_input("Cajas $1.5", 0)
         with c_m2: c_rollos = st.number_input("Rollos $20", 0)
+
+        # SEGURO
+        st.write("---")
+        seguro = st.checkbox("🛡️ Proteger carga (Seguro Básico +$8.00)")
+        costo_seguro = 8.00 if seguro else 0
 
         # CÁLCULOS
         p_camion = data_camion["precio"]
@@ -309,7 +345,7 @@ if not bloqueo:
         if not asc_sal and piso_sal not in ["PB", "1"]: p_pisos += 10
         if not asc_lleg and piso_lleg not in ["PB", "1"]: p_pisos += 10
         
-        total = p_camion + p_personal + p_mat + p_pisos + costo_parada
+        total = p_camion + p_personal + p_mat + p_pisos + costo_parada + costo_seguro
         
         # TARJETA TOTAL
         st.write("")
@@ -317,7 +353,7 @@ if not bloqueo:
         <div style="background-color: #FFC300; padding: 20px; border-radius: 12px; text-align: center; border: 2px solid #2E004E;">
             <div style="color: #2E004E !important; font-size: 20px; font-weight: bold;">TOTAL ESTIMADO</div>
             <div style="color: #2E004E !important; font-size: 55px; font-weight: 900; line-height: 1;">${total:.2f}</div>
-            <div style="color: #2E004E !important; font-size: 14px;">Incluye parada extra</div>
+            <div style="color: #2E004E !important; font-size: 14px;">Incluye parada extra y seguro</div>
         </div>
         """, unsafe_allow_html=True)
         
@@ -329,12 +365,14 @@ if not bloqueo:
         if parada_extra: ruta_final += f" (Parada: {texto_parada})"
         
         if confirmar and total > 0:
-            txt_vid = "📹 ¡TENGO UN VIDEO PARA ENVIAR!" if tiene_video else "No"
-            msg = f"*SOLICITUD* 🚚\n📍 {ruta_final}\n📅 {fecha} ({horario})\n🚛 {camion_select}\n💰 ${total:.2f}\n📦 {inv_txt}\n{txt_vid}"
+            txt_vid = "📹 ¡TENGO VIDEO!" if tiene_video else "No"
+            txt_seguro = "🛡️ CON SEGURO" if seguro else "Sin seguro"
+            
+            msg = f"*MUDANZA* 🚚\n📍 {ruta_final}\n📅 {fecha} ({horario})\n🚛 {camion_select}\n💰 ${total:.2f}\n📦 {inv_txt}\n{txt_vid}\n{txt_seguro}"
             lnk = f"https://wa.me/{NUMERO_WHATSAPP}?text={urllib.parse.quote(msg)}"
             
             if tiene_video or fotos:
-                st.markdown("""<div class="instruccion-adjunto">👆 <b>¡IMPORTANTE!</b><br>Al abrir WhatsApp, recuerda adjuntar tu <b>VIDEO o PDF</b>.</div>""", unsafe_allow_html=True)
+                st.markdown("""<div class="instruccion-adjunto">👆 <b>¡IMPORTANTE!</b><br>Al abrir WhatsApp, adjunta tu <b>VIDEO o PDF</b>.</div>""", unsafe_allow_html=True)
             
             st.markdown(f"""<a href="{lnk}" target="_blank" class="wa-btn">📲 RESERVAR WHATSAPP</a>""", unsafe_allow_html=True)
             
@@ -342,7 +380,7 @@ if not bloqueo:
             try:
                 pdf_bytes = generar_pdf_completo(
                     {'fecha': fecha, 'horario': horario, 'camion': camion_select, 'ruta': ruta_final, 'pago': pago, 'inventario': inv_txt, 'personal': num_ayudantes},
-                    {'camion': p_camion, 'personal': p_personal, 'materiales': p_mat, 'pisos': p_pisos, 'parada_extra': costo_parada},
+                    {'camion': p_camion, 'personal': p_personal, 'materiales': p_mat, 'pisos': p_pisos, 'parada_extra': costo_parada, 'seguro': costo_seguro},
                     total, fotos, tiene_video
                 )
                 st.download_button("📄 Bajar PDF con Fotos", data=pdf_bytes, file_name="Cotizacion.pdf", mime="application/pdf", use_container_width=True)
@@ -352,6 +390,6 @@ if not bloqueo:
 st.divider()
 st.subheader("⭐ Opiniones")
 r1, r2, r3 = st.columns(3)
-with r1: st.markdown("""<div class="review-box"><b>María P.</b> ⭐⭐⭐⭐⭐<br>"La opción de video me ahorró tiempo."</div>""", unsafe_allow_html=True)
-with r2: st.markdown("""<div class="review-box"><b>Carlos G.</b> ⭐⭐⭐⭐⭐<br>"Excelente servicio en parada extra."</div>""", unsafe_allow_html=True)
-with r3: st.markdown("""<div class="review-box"><b>Ana L.</b> ⭐⭐⭐⭐⭐<br>"Seguros y rápidos."</div>""", unsafe_allow_html=True)
+with r1: st.markdown("""<div class="review-box"><b>María P.</b> ⭐⭐⭐⭐⭐<br>"La furgoneta fue perfecta para mis cajas."</div>""", unsafe_allow_html=True)
+with r2: st.markdown("""<div class="review-box"><b>Carlos G.</b> ⭐⭐⭐⭐⭐<br>"Me gustó la sugerencia de cajas, muy útil."</div>""", unsafe_allow_html=True)
+with r3: st.markdown("""<div class="review-box"><b>Ana L.</b> ⭐⭐⭐⭐⭐<br>"Puntuales y el seguro me dio tranquilidad."</div>""", unsafe_allow_html=True)
