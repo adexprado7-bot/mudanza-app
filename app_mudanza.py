@@ -69,7 +69,8 @@ def generar_pdf_completo(datos, desglose, total, imagenes, tiene_video):
     pdf.ln(5)
     
     # Datos Generales
-    pdf.cell(0, 7, clean_text(f"Fecha Servicio: {datos['fecha']} ({datos['horario']})"), ln=1)
+    pdf.cell(0, 7, clean_text(f"Fecha Servicio: {datos['fecha']}"), ln=1)
+    pdf.cell(0, 7, clean_text(f"Hora Solicitada: {datos['horario']}"), ln=1)
     pdf.cell(0, 7, clean_text(f"Vehículo: {datos['camion']}"), ln=1)
     
     pdf.set_font("Arial", 'B', 11)
@@ -206,7 +207,7 @@ if not (validar_zona_segura(origen) and validar_zona_segura(destino) and validar
 if not bloqueo:
     col_izq, col_der = st.columns([1.5, 1], gap="medium")
     puntos_carga = 0 
-    cajas_estimadas = 0 # Variable para la calculadora
+    cajas_estimadas = 0 
 
     with col_izq:
         st.subheader("1. 🚛 Vehículo y Horario")
@@ -214,7 +215,13 @@ if not bloqueo:
         with col_fecha:
             fecha = st.date_input("Fecha", datetime.date.today(), min_value=datetime.date.today())
         with col_hora:
-            horario = st.selectbox("Bloque Horario", ["Mañana (8:00 - 12:00)", "Tarde (13:00 - 17:00)"])
+            # --- HORAS ESPECÍFICAS ---
+            horas = [
+                "8:00 AM", "9:00 AM", "10:00 AM", "11:00 AM", "12:00 PM",
+                "1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM", "5:00 PM"
+            ]
+            hora_inicio = st.selectbox("Hora de Inicio Preferida", horas)
+            st.caption("ℹ️ Sujeto a confirmación de disponibilidad.")
 
         camiones = {
             "Seleccionar...": {"precio": 0, "foto": None},
@@ -238,7 +245,7 @@ if not bloqueo:
                 camas_std = st.number_input("Camas 1.5 / 2 Plazas", 0, 10, 0)
                 if camas_std: 
                     puntos_carga += (camas_std * 5)
-                    cajas_estimadas += (camas_std * 2) # Ropa de cama
+                    cajas_estimadas += (camas_std * 2) 
                     lista_objetos.append(f"{camas_std} Camas Std")
             with c2:
                 camas_king = st.number_input("Camas Queen / King", 0, 5, 0)
@@ -255,7 +262,7 @@ if not bloqueo:
                 if mat_mesa != "Sin Mesa": 
                     pts = 15 if "Mármol" in mat_mesa else (8 if "Vidrio" in mat_mesa else 6)
                     puntos_carga += pts
-                    cajas_estimadas += 2 # Adornos mesa
+                    cajas_estimadas += 2 
                     lista_objetos.append(f"Mesa {mat_mesa}")
             with cm2:
                 sillas = st.number_input("Sillas", 0, 20, 0)
@@ -270,10 +277,9 @@ if not bloqueo:
                     pts = 12 if "Side" in refri else 5
                     puntos_carga += pts; lista_objetos.append(f"Refri {refri}")
                 
-                # Cocina suele tener ollas, platos = mas cajas
                 cocina_item = st.checkbox("Cocina (Estufa)")
                 if cocina_item:
-                    cajas_estimadas += 4 # Ollas y sartenes
+                    cajas_estimadas += 4 
                     lista_objetos.append("Cocina")
                     
             with lb2:
@@ -281,14 +287,13 @@ if not bloqueo:
                 sala = st.checkbox("Juego de Sala")
                 if sala: 
                     puntos_carga += 10
-                    cajas_estimadas += 2 # Adornos sala
+                    cajas_estimadas += 2 
                     lista_objetos.append("Juego Sala")
 
         otros = st.text_area("Cajas / Otros", placeholder="Ej: Libros, Ropa, Juguetes...")
         if otros: puntos_carga += 5; lista_objetos.append(f"Extras: {otros}")
         
-        # Ajuste base de cajas
-        if cajas_estimadas > 0: cajas_estimadas += 2 # Margen de error
+        if cajas_estimadas > 0: cajas_estimadas += 2 
 
         st.write("---")
         st.markdown("##### 📹 Subir Evidencia")
@@ -318,12 +323,11 @@ if not bloqueo:
         st.write("---")
         st.markdown("**Materiales**")
         
-        # CALCULADORA INTELIGENTE
         if cajas_estimadas > 5:
             st.markdown(f"""
             <div class="caja-sugerencia">
-                💡 <b>Sugerencia Inteligente:</b><br>
-                Por tu inventario (cocina, cuartos), estimamos que necesitarás unas <b>{cajas_estimadas} cajas</b>.
+                💡 <b>Sugerencia:</b><br>
+                Estimamos que necesitarás unas <b>{cajas_estimadas} cajas</b>.
             </div>
             """, unsafe_allow_html=True)
         
@@ -368,7 +372,7 @@ if not bloqueo:
             txt_vid = "📹 ¡TENGO VIDEO!" if tiene_video else "No"
             txt_seguro = "🛡️ CON SEGURO" if seguro else "Sin seguro"
             
-            msg = f"*MUDANZA* 🚚\n📍 {ruta_final}\n📅 {fecha} ({horario})\n🚛 {camion_select}\n💰 ${total:.2f}\n📦 {inv_txt}\n{txt_vid}\n{txt_seguro}"
+            msg = f"*MUDANZA* 🚚\n📍 {ruta_final}\n📅 {fecha} ({hora_inicio})\n🚛 {camion_select}\n💰 ${total:.2f}\n📦 {inv_txt}\n{txt_vid}\n{txt_seguro}"
             lnk = f"https://wa.me/{NUMERO_WHATSAPP}?text={urllib.parse.quote(msg)}"
             
             if tiene_video or fotos:
@@ -379,7 +383,7 @@ if not bloqueo:
             st.write("")
             try:
                 pdf_bytes = generar_pdf_completo(
-                    {'fecha': fecha, 'horario': horario, 'camion': camion_select, 'ruta': ruta_final, 'pago': pago, 'inventario': inv_txt, 'personal': num_ayudantes},
+                    {'fecha': fecha, 'horario': hora_inicio, 'camion': camion_select, 'ruta': ruta_final, 'pago': pago, 'inventario': inv_txt, 'personal': num_ayudantes},
                     {'camion': p_camion, 'personal': p_personal, 'materiales': p_mat, 'pisos': p_pisos, 'parada_extra': costo_parada, 'seguro': costo_seguro},
                     total, fotos, tiene_video
                 )
