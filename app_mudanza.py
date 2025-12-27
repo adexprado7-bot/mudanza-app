@@ -7,7 +7,7 @@ import tempfile
 import base64
 
 # --- 1. CONFIGURACIÓN ---
-st.set_page_config(page_title="Mudanza Prime", page_icon="🚚", layout="wide")
+st.set_page_config(page_title="Mudanzas Acom", page_icon="🚛", layout="wide")
 NUMERO_WHATSAPP = "593998994518"
 
 # --- 2. ZONAS Y SEGURIDAD ---
@@ -37,33 +37,33 @@ def clean_text(text):
         text = text.replace(old, new)
     return text.encode('latin-1', 'ignore').decode('latin-1')
 
-# --- 4. CLASE PDF ---
+# --- 4. CLASE PDF (REBRANDING) ---
 class PDF(FPDF):
     def header(self):
         if os.path.exists("logo.png"):
             try: self.image('logo.png', x=10, y=8, w=30)
             except: pass
         self.set_font('Arial', 'B', 16)
-        self.set_text_color(46, 0, 78) 
-        self.cell(0, 10, clean_text('MUDANZA PRIME'), 0, 1, 'C')
+        self.set_text_color(0, 68, 129) # Azul Corporativo
+        self.cell(0, 10, clean_text('MUDANZAS ACOM'), 0, 1, 'C')
         self.set_font('Arial', 'I', 10)
         self.set_text_color(100, 100, 100)
-        self.cell(0, 5, clean_text('Cotización Profesional'), 0, 1, 'C')
+        self.cell(0, 5, clean_text('Alianza Estratégica & Logística'), 0, 1, 'C')
         self.ln(15)
 
     def footer(self):
         self.set_y(-15)
         self.set_font('Arial', 'I', 8)
         self.set_text_color(128)
-        self.cell(0, 10, clean_text('Mudanza Prime Guayaquil'), 0, 0, 'C')
+        self.cell(0, 10, clean_text('Mudanzas Acom - Servicio Garantizado'), 0, 0, 'C')
 
 def generar_pdf_completo(datos, desglose, total, imagenes, tiene_video):
     pdf = PDF()
     pdf.add_page()
     pdf.set_font("Arial", size=11)
     
-    # Encabezado
-    pdf.set_fill_color(240, 240, 240)
+    # Encabezado (Gris muy suave)
+    pdf.set_fill_color(245, 245, 245)
     pdf.set_text_color(0, 0, 0)
     pdf.cell(0, 10, clean_text(f"Fecha Emisión: {datetime.date.today()}"), ln=1, fill=True)
     pdf.ln(5)
@@ -117,7 +117,8 @@ def generar_pdf_completo(datos, desglose, total, imagenes, tiene_video):
     pdf.cell(40, 8, f"${desglose['materiales']:.2f}", 1, 1, 'R')
     
     pdf.set_font("Arial", 'B', 14)
-    pdf.set_text_color(46, 0, 78)
+    # Azul para el total en PDF
+    pdf.set_text_color(0, 68, 129)
     pdf.cell(140, 12, "TOTAL ESTIMADO", 1)
     pdf.cell(40, 12, f"${total:.2f}", 1, 1, 'R')
 
@@ -139,48 +140,73 @@ def generar_pdf_completo(datos, desglose, total, imagenes, tiene_video):
 
     return pdf.output(dest='S').encode('latin-1', 'ignore')
 
-# --- 5. ESTILOS ---
+# --- 5. ESTILOS AZUL Y BLANCO ---
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
+    
+    /* Botón WhatsApp: Un verde más profesional que combine con azul */
     .wa-btn {
-        display: block; width: 100%; background-color: #25D366; color: white !important;
-        text-align: center; padding: 15px; border-radius: 10px; font-weight: bold; font-size: 20px;
-        margin-top: 5px; text-decoration: none; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        display: block; width: 100%; 
+        background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+        color: white !important;
+        text-align: center; padding: 15px; border-radius: 8px; 
+        font-weight: bold; font-size: 20px; 
+        margin-top: 5px; text-decoration: none; 
+        box-shadow: 0 4px 10px rgba(37, 211, 102, 0.2);
+        transition: transform 0.2s;
     }
-    .wa-btn:hover { background-color: #128C7E; transform: scale(1.02); }
-    h1, h2, h3 { color: #8A2BE2 !important; } 
-    @media (prefers-color-scheme: dark) { h1, h2, h3 { color: #D8B4FE !important; } }
+    .wa-btn:hover { transform: translateY(-2px); }
+    
+    /* Títulos en Azul Corporativo Acom */
+    h1, h2, h3 { color: #004481 !important; } 
+    
+    /* Modo Oscuro: Títulos en Azul Claro */
+    @media (prefers-color-scheme: dark) { h1, h2, h3 { color: #64B5F6 !important; } }
+    
+    /* Cajas de Reseñas: Blanco con borde azul */
     .review-box {
-        background-color: #FFFDE7; color: black; padding: 15px; border-radius: 10px;
-        border-left: 5px solid #FFC300; font-size: 14px; margin-bottom: 10px;
+        background-color: #F5F9FC; color: #333; 
+        padding: 15px; border-radius: 8px;
+        border-left: 5px solid #004481; 
+        font-size: 14px; margin-bottom: 10px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     }
-    @media (prefers-color-scheme: dark) { .review-box { background-color: #262730; color: white; } }
+    @media (prefers-color-scheme: dark) { 
+        .review-box { background-color: #1E293B; color: white; border-left: 5px solid #64B5F6; } 
+    }
+    
     .alerta-zona {
-        background-color: #FFEBEE; border: 2px solid #D32F2F; color: #D32F2F; padding: 15px; 
-        border-radius: 10px; font-weight: bold; text-align: center; margin-bottom: 20px;
+        background-color: #FFEBEE; border: 1px solid #D32F2F; color: #D32F2F; 
+        padding: 15px; border-radius: 8px; font-weight: bold; 
+        text-align: center; margin-bottom: 20px;
     }
     .instruccion-adjunto {
-        background-color: #E8F5E9; color: #1B5E20; padding: 10px; 
+        background-color: #E3F2FD; color: #004481; padding: 10px; 
         border-radius: 8px; text-align: center; font-size: 14px; 
-        margin-bottom: 5px; border: 1px dashed #4CAF50;
+        margin-bottom: 5px; border: 1px dashed #004481;
     }
     .caja-sugerencia {
-        background-color: #E3F2FD; color: #0D47A1; padding: 10px; border-radius: 8px; 
-        border-left: 5px solid #2196F3; font-size: 14px; margin-bottom: 10px;
+        background-color: #F0F4C3; color: #33691E; padding: 10px; border-radius: 8px; 
+        border-left: 5px solid #8BC34A; font-size: 14px; margin-bottom: 10px;
+    }
+    
+    /* Estilo para los inputs */
+    div[data-baseweb="select"] > div, div[data-baseweb="input"] > div {
+        border-color: #E0E0E0;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# --- 6. UI ---
+# --- 6. UI PRINCIPAL ---
 col_logo, col_header = st.columns([1, 4])
 with col_logo:
     if os.path.exists("logo.png"): st.image("logo.png", width=120)
-    else: st.header("🚚")
+    else: st.header("🚛")
 with col_header:
-    st.title("Mudanza Prime")
-    st.markdown("**Cotizador Inteligente** | Guayaquil")
+    st.title("Mudanzas Acom")
+    st.markdown("**Calidad, Confianza y Seguridad** | Socio Estratégico")
 st.divider()
 
 # --- RUTA ---
@@ -215,13 +241,12 @@ if not bloqueo:
         with col_fecha:
             fecha = st.date_input("Fecha", datetime.date.today(), min_value=datetime.date.today())
         with col_hora:
-            # --- HORAS ESPECÍFICAS ---
             horas = [
                 "8:00 AM", "9:00 AM", "10:00 AM", "11:00 AM", "12:00 PM",
                 "1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM", "5:00 PM"
             ]
             hora_inicio = st.selectbox("Hora de Inicio Preferida", horas)
-            st.caption("ℹ️ Sujeto a confirmación de disponibilidad.")
+            st.caption("ℹ️ Consultaremos disponibilidad al recibir tu pedido.")
 
         camiones = {
             "Seleccionar...": {"precio": 0, "foto": None},
@@ -326,8 +351,7 @@ if not bloqueo:
         if cajas_estimadas > 5:
             st.markdown(f"""
             <div class="caja-sugerencia">
-                💡 <b>Sugerencia:</b><br>
-                Estimamos que necesitarás unas <b>{cajas_estimadas} cajas</b>.
+                💡 <b>Sugerencia:</b> Estimamos que necesitarás <b>{cajas_estimadas} cajas</b>.
             </div>
             """, unsafe_allow_html=True)
         
@@ -335,9 +359,8 @@ if not bloqueo:
         with c_m1: c_cajas = st.number_input("Cajas $1.5", 0)
         with c_m2: c_rollos = st.number_input("Rollos $20", 0)
 
-        # SEGURO
         st.write("---")
-        seguro = st.checkbox("🛡️ Proteger carga (Seguro Básico +$8.00)")
+        seguro = st.checkbox("🛡️ Proteger carga (Seguro +$8.00)")
         costo_seguro = 8.00 if seguro else 0
 
         # CÁLCULOS
@@ -351,13 +374,13 @@ if not bloqueo:
         
         total = p_camion + p_personal + p_mat + p_pisos + costo_parada + costo_seguro
         
-        # TARJETA TOTAL
+        # TARJETA TOTAL EN AZUL Y BLANCO
         st.write("")
         st.markdown(f"""
-        <div style="background-color: #FFC300; padding: 20px; border-radius: 12px; text-align: center; border: 2px solid #2E004E;">
-            <div style="color: #2E004E !important; font-size: 20px; font-weight: bold;">TOTAL ESTIMADO</div>
-            <div style="color: #2E004E !important; font-size: 55px; font-weight: 900; line-height: 1;">${total:.2f}</div>
-            <div style="color: #2E004E !important; font-size: 14px;">Incluye parada extra y seguro</div>
+        <div style="background-color: #004481; padding: 25px; border-radius: 12px; text-align: center; box-shadow: 0 4px 15px rgba(0, 68, 129, 0.3);">
+            <div style="color: white !important; font-size: 20px; font-weight: bold; opacity: 0.9;">TOTAL ESTIMADO</div>
+            <div style="color: white !important; font-size: 55px; font-weight: 900; line-height: 1.1;">${total:.2f}</div>
+            <div style="color: white !important; font-size: 14px; opacity: 0.8; margin-top: 5px;">Mudanzas Acom Garantía</div>
         </div>
         """, unsafe_allow_html=True)
         
@@ -372,13 +395,13 @@ if not bloqueo:
             txt_vid = "📹 ¡TENGO VIDEO!" if tiene_video else "No"
             txt_seguro = "🛡️ CON SEGURO" if seguro else "Sin seguro"
             
-            msg = f"*MUDANZA* 🚚\n📍 {ruta_final}\n📅 {fecha} ({hora_inicio})\n🚛 {camion_select}\n💰 ${total:.2f}\n📦 {inv_txt}\n{txt_vid}\n{txt_seguro}"
+            msg = f"*PEDIDO ACOM* 🚚\n📍 {ruta_final}\n📅 {fecha} ({hora_inicio})\n🚛 {camion_select}\n💰 ${total:.2f}\n📦 {inv_txt}\n{txt_vid}\n{txt_seguro}"
             lnk = f"https://wa.me/{NUMERO_WHATSAPP}?text={urllib.parse.quote(msg)}"
             
             if tiene_video or fotos:
-                st.markdown("""<div class="instruccion-adjunto">👆 <b>¡IMPORTANTE!</b><br>Al abrir WhatsApp, adjunta tu <b>VIDEO o PDF</b>.</div>""", unsafe_allow_html=True)
+                st.markdown("""<div class="instruccion-adjunto">👆 <b>¡RECUERDA!</b> Adjunta tu <b>VIDEO/PDF</b> en WhatsApp.</div>""", unsafe_allow_html=True)
             
-            st.markdown(f"""<a href="{lnk}" target="_blank" class="wa-btn">📲 RESERVAR WHATSAPP</a>""", unsafe_allow_html=True)
+            st.markdown(f"""<a href="{lnk}" target="_blank" class="wa-btn">📲 CONFIRMAR EN WHATSAPP</a>""", unsafe_allow_html=True)
             
             st.write("")
             try:
@@ -387,13 +410,13 @@ if not bloqueo:
                     {'camion': p_camion, 'personal': p_personal, 'materiales': p_mat, 'pisos': p_pisos, 'parada_extra': costo_parada, 'seguro': costo_seguro},
                     total, fotos, tiene_video
                 )
-                st.download_button("📄 Bajar PDF con Fotos", data=pdf_bytes, file_name="Cotizacion.pdf", mime="application/pdf", use_container_width=True)
+                st.download_button("📄 Bajar PDF Acom", data=pdf_bytes, file_name="Cotizacion_Acom.pdf", mime="application/pdf", use_container_width=True)
             except Exception as e:
                 st.error(f"Error PDF: {e}")
 
 st.divider()
-st.subheader("⭐ Opiniones")
+st.subheader("⭐ Experiencias Acom")
 r1, r2, r3 = st.columns(3)
-with r1: st.markdown("""<div class="review-box"><b>María P.</b> ⭐⭐⭐⭐⭐<br>"La furgoneta fue perfecta para mis cajas."</div>""", unsafe_allow_html=True)
-with r2: st.markdown("""<div class="review-box"><b>Carlos G.</b> ⭐⭐⭐⭐⭐<br>"Me gustó la sugerencia de cajas, muy útil."</div>""", unsafe_allow_html=True)
-with r3: st.markdown("""<div class="review-box"><b>Ana L.</b> ⭐⭐⭐⭐⭐<br>"Puntuales y el seguro me dio tranquilidad."</div>""", unsafe_allow_html=True)
+with r1: st.markdown("""<div class="review-box"><b>María P.</b> ⭐⭐⭐⭐⭐<br>"Excelente servicio y seriedad."</div>""", unsafe_allow_html=True)
+with r2: st.markdown("""<div class="review-box"><b>Carlos G.</b> ⭐⭐⭐⭐⭐<br>"Llegaron a la hora exacta. Muy formales."</div>""", unsafe_allow_html=True)
+with r3: st.markdown("""<div class="review-box"><b>Ana L.</b> ⭐⭐⭐⭐⭐<br>"Me sentí segura con el servicio."</div>""", unsafe_allow_html=True)
